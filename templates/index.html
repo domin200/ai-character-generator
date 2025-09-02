@@ -634,7 +634,7 @@
                     // 서버에서 바로 결과를 받은 경우 처리
                     console.log('Direct results received:', data.results);
                     
-                    // Replicate 결과 처리
+                    // Replicate 결과 처리 (첫 번째 API)
                     if (data.results.result_image_url) {
                         displayImage('result-container', data.results.result_image_url, '변환된 이미지 (replicate)', data.results.result_image_filename);
                         currentProgress.image1 = true;
@@ -656,10 +656,17 @@
                         currentProgress.image3 = true;
                     }
                     
-                    // 모든 처리 완료
-                    generateBtn.disabled = false;
-                    generateBtn.textContent = '🚀 캐릭터 변환 시작';
-                    showToast('모든 이미지가 성공적으로 생성되었습니다!', 'success');
+                    // 계속 처리해야 하는지 확인
+                    if (data.continue_processing) {
+                        // 나머지 API 처리를 위해 진행상황 확인 계속
+                        console.log('Continue processing remaining APIs...');
+                        checkProgress();
+                    } else {
+                        // 모든 처리 완료
+                        generateBtn.disabled = false;
+                        generateBtn.textContent = '🚀 캐릭터 변환 시작';
+                        showToast('모든 이미지가 성공적으로 생성되었습니다!', 'success');
+                    }
                 } else {
                     // 기존 방식으로 진행상황 확인
                     console.log('No direct results, starting progress check...');

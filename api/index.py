@@ -18,6 +18,41 @@ def index():
 
 @app.route('/api/check_progress')
 def check_progress():
+    # 나머지 API 처리가 필요한지 확인하고 처리
+    if not session.get('result_image_2_ready', False) and session.get('image_data_base64'):
+        try:
+            image_data = base64.b64decode(session.get('image_data_base64'))
+            fal_result = process_fal_api_direct(image_data)
+            if fal_result:
+                session['result_image_2_url'] = fal_result
+                session['result_image_2_filename'] = 'mirai_falai_default.png'
+                session['result_image_2_ready'] = True
+                print("FAL API completed in check_progress")
+        except Exception as e:
+            print(f"FAL API error in check_progress: {e}")
+    
+    if not session.get('result_image_3_ready', False) and session.get('image_data_base64'):
+        try:
+            image_data = base64.b64decode(session.get('image_data_base64'))
+            filename = session.get('filename', 'image.jpg')
+            gemini_results = process_gemini_api_direct(image_data, filename)
+            if gemini_results and gemini_results.get('urls'):
+                emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
+                filenames = []
+                for i in range(len(gemini_results['urls'])):
+                    emotion = emotion_tags[i] if i < len(emotion_tags) else f'emotion_{i+1}'
+                    filenames.append(f'mirai_gemini_{emotion}.png')
+                
+                session['result_image_3_url'] = gemini_results['urls'][0]
+                session['result_image_3_all_urls'] = gemini_results['urls']
+                session['result_image_3_count'] = len(gemini_results['urls'])
+                session['result_image_3_filename'] = filenames[0] if filenames else 'mirai_gemini_default.png'
+                session['result_image_3_filenames'] = filenames
+                session['result_image_3_ready'] = True
+                print("Gemini API completed in check_progress")
+        except Exception as e:
+            print(f"Gemini API error in check_progress: {e}")
+    
     # 세션에서 진행 상황 확인 - 직접 API URL 반환
     result = {
         'result_image': session.get('result_image_ready', False),
@@ -89,12 +124,12 @@ def generate_image():
         # 이미지 데이터 준비
         image_data = uploaded_file.read()
         
-        # 동기적으로 각 API 순차 실행하고 결과 수집
-        print("Starting synchronous image processing...")
+        # 첫 번째 API만 빠르게 처리 (Vercel 시간 제한 때문)
+        print("Processing first API only due to Vercel timeout limits...")
         
         results = {}
         
-        # 1. Replicate API 처리
+        # 1. Replicate API 처리만
         try:
             replicate_result = process_replicate_api_direct(image_data)
             if replicate_result:
@@ -109,52 +144,16 @@ def generate_image():
         except Exception as e:
             print(f"Replicate API error: {e}")
         
-        # 2. FAL API 처리  
-        try:
-            fal_result = process_fal_api_direct(image_data)
-            if fal_result:
-                fal_data = {
-                    'result_image_2': True,
-                    'result_image_2_url': fal_result,
-                    'result_image_2_filename': 'mirai_falai_default.png',
-                    'result_image_2_ready': True
-                }
-                results.update(fal_data)
-                session.update(fal_data)
-                print("FAL API completed")
-        except Exception as e:
-            print(f"FAL API error: {e}")
+        # 나머지 API는 세션에 저장하고 기존 방식으로 처리
+        session['image_data_base64'] = base64.b64encode(image_data).decode('utf-8')
+        session['filename'] = uploaded_file.filename
         
-        # 3. Gemini API 처리
-        try:
-            gemini_results = process_gemini_api_direct(image_data, uploaded_file.filename)
-            if gemini_results and gemini_results.get('urls'):
-                emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
-                filenames = []
-                for i in range(len(gemini_results['urls'])):
-                    emotion = emotion_tags[i] if i < len(emotion_tags) else f'emotion_{i+1}'
-                    filenames.append(f'mirai_gemini_{emotion}.png')
-                
-                gemini_data = {
-                    'result_image_3': True,
-                    'result_image_3_url': gemini_results['urls'][0],
-                    'result_image_3_all_urls': gemini_results['urls'],
-                    'result_image_3_count': len(gemini_results['urls']),
-                    'result_image_3_filename': filenames[0] if filenames else 'mirai_gemini_default.png',
-                    'result_image_3_filenames': filenames,
-                    'result_image_3_ready': True
-                }
-                results.update(gemini_data)
-                session.update(gemini_data)
-                print("Gemini API completed")
-        except Exception as e:
-            print(f"Gemini API error: {e}")
-        
-        print(f"All processing completed. Results: {len(results)} items")
+        print(f"First API completed. Results: {len(results)} items")
         return jsonify({
             'success': True, 
-            'message': '모든 이미지 처리가 완료되었습니다!',
-            'results': results
+            'message': '첫 번째 이미지 처리 완료! 나머지 처리 중...',
+            'results': results,
+            'continue_processing': True  # 프론트엔드에서 계속 확인하도록
         })
         
     except Exception as e:
