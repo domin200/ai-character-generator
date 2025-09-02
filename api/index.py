@@ -105,9 +105,13 @@ def generate_image():
                     'result_image_ready': True
                 })
                 session.update(results)
-                print("Replicate API completed")
+                print(f"Replicate API completed successfully: {replicate_result[:100]}...")
+            else:
+                print("Replicate API returned None result")
         except Exception as e:
             print(f"Replicate API error: {e}")
+            import traceback
+            print(f"Replicate traceback: {traceback.format_exc()}")
         
         # 2. FAL API 처리  
         try:
