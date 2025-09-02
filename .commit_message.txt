@@ -1,1 +1,1 @@
-🔧 Vercel 세션 문제 해결: 동기 처리 + 직접 결과 반환으로 무한 로딩 해결
+🐛 Replicate API URL 메서드 수정: output.url() 사용으로 Vercel 이미지 표시 문제 해결
