@@ -656,17 +656,10 @@
                         currentProgress.image3 = true;
                     }
                     
-                    // 계속 처리해야 하는지 확인
-                    if (data.continue_processing) {
-                        // 나머지 API 처리를 위해 진행상황 확인 계속
-                        console.log('Continue processing remaining APIs...');
-                        checkProgress();
-                    } else {
-                        // 모든 처리 완료
-                        generateBtn.disabled = false;
-                        generateBtn.textContent = '🚀 캐릭터 변환 시작';
-                        showToast('모든 이미지가 성공적으로 생성되었습니다!', 'success');
-                    }
+                    // 모든 처리 완료
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = '🚀 캐릭터 변환 시작';
+                    showToast('모든 이미지가 성공적으로 생성되었습니다!', 'success');
                 } else {
                     // 기존 방식으로 진행상황 확인
                     console.log('No direct results, starting progress check...');
