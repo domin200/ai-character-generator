@@ -1,1 +1,1 @@
-🐛 Replicate API URL 메서드 수정: output.url() 사용으로 Vercel 이미지 표시 문제 해결
+🔧 Replicate 모델 버전 추가: google/nano-banana:85b55096으로 Vercel 오류 해결

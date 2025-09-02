@@ -256,7 +256,7 @@ def process_replicate_api(image_data):
         # 1단계: Replicate API 호출 (캐릭터 생성)
         print("Step 1: Generating character...")
         output_character = replicate.run(
-            "google/nano-banana",
+            "google/nano-banana:85b55096",
             input=api_input
         )
         
