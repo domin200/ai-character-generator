@@ -3,6 +3,7 @@ import fal_client
 from flask import Flask, render_template, request, session, jsonify
 import base64
 import threading
+import os
 
 app = Flask(__name__, template_folder='../templates')
 app.secret_key = 'banana-ai-character-generator-secret-key-2024'
@@ -24,7 +25,10 @@ def check_progress():
         'result_image_3': session.get('result_image_3_ready', False),
         'result_image_url': session.get('result_image_url'),
         'result_image_2_url': session.get('result_image_2_url'),
-        'result_image_3_url': session.get('result_image_3_url')
+        'result_image_3_url': session.get('result_image_3_url'),
+        'result_image_filename': session.get('result_image_filename'),
+        'result_image_2_filename': session.get('result_image_2_filename'),
+        'result_image_3_filename': session.get('result_image_3_filename')
     }
     
     # Gemini 다중 이미지 정보 추가
@@ -32,8 +36,38 @@ def check_progress():
     if gemini_all_urls:
         result['result_image_3_all_urls'] = gemini_all_urls
         result['result_image_3_count'] = len(gemini_all_urls)
+        result['result_image_3_filenames'] = session.get('result_image_3_filenames', [])
     
     return jsonify(result)
+
+@app.route('/reset_on_upload', methods=['POST'])
+def reset_on_upload():
+    """원본 이미지 업로드 시 세션 초기화"""
+    try:
+        # 이미지 관련 세션 데이터 모두 삭제
+        session_keys_to_clear = [
+            'result_image_ready', 'result_image_2_ready', 'result_image_3_ready',
+            'result_image_url', 'result_image_2_url', 'result_image_3_url',
+            'result_image_filename', 'result_image_2_filename', 'result_image_3_filename',
+            'result_image_3_all_urls', 'result_image_3_filenames'
+        ]
+        
+        cleared_keys = []
+        for key in session_keys_to_clear:
+            if key in session:
+                session.pop(key, None)
+                cleared_keys.append(key)
+        
+        print(f"Cleared {len(cleared_keys)} session keys on upload: {cleared_keys}")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'세션 초기화 완료 ({len(cleared_keys)}개 항목 삭제)',
+            'cleared_keys': cleared_keys
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/generate', methods=['POST'])
 def generate_image():
@@ -121,6 +155,7 @@ def process_replicate_api(image_data):
         
         # 첫 번째 이미지 완성 표시 - 직접 URL 저장
         session['result_image_url'] = result['image']['url']
+        session['result_image_filename'] = 'mirai_replicate_default.png'
         session['result_image_ready'] = True
         
     except Exception as e:
@@ -171,6 +206,7 @@ def process_fal_api(image_data):
         
         # 두 번째 이미지 완성 표시 - 직접 URL 저장
         session['result_image_2_url'] = edit_bg_removed_result['image']['url']
+        session['result_image_2_filename'] = 'mirai_falai_default.png'
         session['result_image_2_ready'] = True
         
     except Exception as e:
@@ -192,7 +228,7 @@ def process_gemini_api(image_data, filename):
             mime_type = 'image/jpeg'  # 기본값
         
         # Gemini API 호출
-        gemini_api_key = "AIzaSyBIFu5xH4JCu__xfvEnFG1GEQR3APZyKJI"
+        gemini_api_key = os.environ.get('GEMINI_API_KEY', 'AIzaSyBIFu5xH4JCu__xfvEnFG1GEQR3APZyKJI')
         gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
         
         gemini_headers = {
@@ -265,10 +301,19 @@ def process_gemini_api(image_data, filename):
                 
                 # 모든 Gemini 이미지 URL을 세션에 저장
                 if gemini_image_urls:
+                    # 감정별 파일명 생성
+                    emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
+                    filenames = []
+                    for i in range(len(gemini_image_urls)):
+                        emotion = emotion_tags[i] if i < len(emotion_tags) else f'emotion_{i+1}'
+                        filenames.append(f'mirai_gemini_{emotion}.png')
+                    
                     session['result_image_3_url'] = gemini_image_urls[0]  # 첫 번째 이미지
                     session['result_image_3_all_urls'] = gemini_image_urls  # 모든 이미지 URL
+                    session['result_image_3_filename'] = filenames[0] if filenames else 'mirai_gemini_default.png'  # 첫 번째 파일명
+                    session['result_image_3_filenames'] = filenames  # 모든 파일명
                     session['result_image_3_ready'] = True
-                    print(f"Total {len(gemini_image_urls)} Gemini images processed")
+                    print(f"Total {len(gemini_image_urls)} Gemini images processed with filenames: {filenames}")
         
     except Exception as e:
         print(f"Gemini API error: {str(e)}")
