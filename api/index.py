@@ -9,6 +9,9 @@ import threading
 app = Flask(__name__, template_folder='../templates')
 app.secret_key = 'banana-ai-character-generator-secret-key-2024'
 
+# 병렬 처리 결과 임시 저장소
+processing_results = {}
+results_lock = threading.Lock()
 
 # 웹 배포용 - 로컬 저장 제거
 
@@ -20,25 +23,36 @@ def index():
 
 @app.route('/api/check_progress')
 def check_progress():
+    global processing_results
+    
+    # 세션 ID로 결과 확인
+    session_id = session.get('processing_id')
+    
+    if session_id and session_id in processing_results:
+        with results_lock:
+            current_results = processing_results.get(session_id, {})
+    else:
+        current_results = {}
+    
     # 세션에서 진행 상황 확인 - 직접 API URL 반환
     result = {
-        'result_image': session.get('result_image_ready', False),
-        'result_image_2': session.get('result_image_2_ready', False), 
-        'result_image_3': session.get('result_image_3_ready', False),
-        'result_image_url': session.get('result_image_url'),
-        'result_image_2_url': session.get('result_image_2_url'),
-        'result_image_3_url': session.get('result_image_3_url'),
-        'result_image_filename': session.get('result_image_filename'),
-        'result_image_2_filename': session.get('result_image_2_filename'),
-        'result_image_3_filename': session.get('result_image_3_filename')
+        'result_image': current_results.get('result_image_ready', False),
+        'result_image_2': current_results.get('result_image_2_ready', False), 
+        'result_image_3': current_results.get('result_image_3_ready', False),
+        'result_image_url': current_results.get('result_image_url'),
+        'result_image_2_url': current_results.get('result_image_2_url'),
+        'result_image_3_url': current_results.get('result_image_3_url'),
+        'result_image_filename': current_results.get('result_image_filename'),
+        'result_image_2_filename': current_results.get('result_image_2_filename'),
+        'result_image_3_filename': current_results.get('result_image_3_filename')
     }
     
     # Gemini 다중 이미지 정보 추가
-    gemini_all_urls = session.get('result_image_3_all_urls', [])
+    gemini_all_urls = current_results.get('result_image_3_all_urls', [])
     if gemini_all_urls:
         result['result_image_3_all_urls'] = gemini_all_urls
         result['result_image_3_count'] = len(gemini_all_urls)
-        result['result_image_3_filenames'] = session.get('result_image_3_filenames', [])
+        result['result_image_3_filenames'] = current_results.get('result_image_3_filenames', [])
     
     return jsonify(result)
 
@@ -73,15 +87,17 @@ def reset_on_upload():
 
 @app.route('/generate', methods=['POST'])
 def generate_image():
+    global processing_results
+    
     try:
+        # 고유 세션 ID 생성
+        import uuid
+        session_id = str(uuid.uuid4())
+        session['processing_id'] = session_id
+        
         # 진행 상태 초기화
-        session['result_image_ready'] = False
-        session['result_image_2_ready'] = False
-        session['result_image_3_ready'] = False
-        session.pop('result_image_url', None)
-        session.pop('result_image_2_url', None)
-        session.pop('result_image_3_url', None)
-        session.pop('result_image_3_all_urls', None)
+        with results_lock:
+            processing_results[session_id] = {}
         
         uploaded_file = request.files.get('image')
         
@@ -92,10 +108,9 @@ def generate_image():
         image_data = uploaded_file.read()
         
         # 병렬 처리로 모든 API 동시 실행
-        print("Processing all APIs in parallel...")
+        print(f"Processing all APIs in parallel for session {session_id}...")
         
         results = {}
-        session_lock = threading.Lock()
         
         def process_replicate_wrapper():
             try:
@@ -107,9 +122,9 @@ def generate_image():
                         'result_image_filename': 'mirai_replicate_default.png',
                         'result_image_ready': True
                     }
-                    with session_lock:
+                    with results_lock:
                         results.update(data)
-                        session.update(data)
+                        processing_results[session_id].update(data)
                     print(f"Replicate API completed: {replicate_result[:100]}...")
                     return ('replicate', data)
                 else:
@@ -131,9 +146,9 @@ def generate_image():
                         'result_image_2_filename': 'mirai_falai_default.png',
                         'result_image_2_ready': True
                     }
-                    with session_lock:
+                    with results_lock:
                         results.update(data)
-                        session.update(data)
+                        processing_results[session_id].update(data)
                     print("FAL API completed")
                     return ('fal', data)
                 return ('fal', None)
@@ -160,9 +175,9 @@ def generate_image():
                         'result_image_3_filenames': filenames,
                         'result_image_3_ready': True
                     }
-                    with session_lock:
+                    with results_lock:
                         results.update(data)
-                        session.update(data)
+                        processing_results[session_id].update(data)
                     print("Gemini API completed")
                     return ('gemini', data)
                 return ('gemini', None)
@@ -182,9 +197,9 @@ def generate_image():
             for future in as_completed(futures):
                 api_name, result = future.result()
                 if result:
-                    print(f"{api_name} completed and saved to session")
+                    print(f"{api_name} completed and saved")
         
-        print(f"All processing completed. Results: {len(results)} items")
+        print(f"All processing completed for session {session_id}. Results: {len(results)} items")
         
         # 처리 시작 응답 반환 (클라이언트가 진행상황 체크 시작)
         return jsonify({
