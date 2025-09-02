@@ -192,13 +192,23 @@ def process_replicate_api_direct(image_data):
         print("Step 2: Removing background...")
         
         # Replicate 결과 URL을 배경 제거 API에 전달
-        result = fal_client.subscribe(
-            "fal-ai/bria/background/remove",
-            arguments={
-                "image_url": character_url
-            },
-            with_logs=True,
-        )
+        try:
+            result = fal_client.submit(
+                "fal-ai/bria/background/remove",
+                arguments={
+                    "image_url": character_url
+                }
+            )
+            result = fal_client.result(result.request_id)
+        except AttributeError:
+            # 구버전 API 사용
+            import fal_client as fal
+            result = fal.run(
+                "fal-ai/bria/background/remove",
+                arguments={
+                    "image_url": character_url
+                }
+            )
         
         print("Background removal result:", result)
         
@@ -219,14 +229,25 @@ def process_fal_api_direct(image_data):
         original_data_uri = f"data:{mime_type};base64,{original_base64}"
         
         # nano-banana/edit API 호출
-        edit_result = fal_client.subscribe(
-            "fal-ai/nano-banana/edit",
-            arguments={
-                "prompt": "Here's the full-body standing illustration of the character for a game dialogue window, keeping only the character with a transparent background.",
-                "image_urls": [original_data_uri]
-            },
-            with_logs=True,
-        )
+        try:
+            edit_submit = fal_client.submit(
+                "fal-ai/nano-banana/edit",
+                arguments={
+                    "prompt": "Here's the full-body standing illustration of the character for a game dialogue window, keeping only the character with a transparent background.",
+                    "image_urls": [original_data_uri]
+                }
+            )
+            edit_result = fal_client.result(edit_submit.request_id)
+        except AttributeError:
+            # 구버전 API 사용
+            import fal_client as fal
+            edit_result = fal.run(
+                "fal-ai/nano-banana/edit",
+                arguments={
+                    "prompt": "Here's the full-body standing illustration of the character for a game dialogue window, keeping only the character with a transparent background.",
+                    "image_urls": [original_data_uri]
+                }
+            )
         
         print("nano-banana/edit result:", edit_result)
         
@@ -234,13 +255,23 @@ def process_fal_api_direct(image_data):
         print("Removing background from edited image...")
         
         # FAL API 결과 URL을 배경 제거 API에 직접 전달
-        edit_bg_removed_result = fal_client.subscribe(
-            "fal-ai/bria/background/remove",
-            arguments={
-                "image_url": edit_result['images'][0]['url']
-            },
-            with_logs=True,
-        )
+        try:
+            bg_submit = fal_client.submit(
+                "fal-ai/bria/background/remove",
+                arguments={
+                    "image_url": edit_result['images'][0]['url']
+                }
+            )
+            edit_bg_removed_result = fal_client.result(bg_submit.request_id)
+        except AttributeError:
+            # 구버전 API 사용
+            import fal_client as fal
+            edit_bg_removed_result = fal.run(
+                "fal-ai/bria/background/remove",
+                arguments={
+                    "image_url": edit_result['images'][0]['url']
+                }
+            )
         
         print("Edit background removal result:", edit_bg_removed_result)
         
@@ -424,13 +455,23 @@ def process_gemini_api_direct(image_data, filename):
                             print(f"Removing background from Gemini image {part_index + 1}...")
                             
                             # Gemini 이미지의 배경 제거
-                            gemini_bg_removed_result = fal_client.subscribe(
-                                "fal-ai/bria/background/remove",
-                                arguments={
-                                    "image_url": gemini_data_uri_for_bg
-                                },
-                                with_logs=True,
-                            )
+                            try:
+                                gemini_bg_submit = fal_client.submit(
+                                    "fal-ai/bria/background/remove",
+                                    arguments={
+                                        "image_url": gemini_data_uri_for_bg
+                                    }
+                                )
+                                gemini_bg_removed_result = fal_client.result(gemini_bg_submit.request_id)
+                            except AttributeError:
+                                # 구버전 API 사용
+                                import fal_client as fal
+                                gemini_bg_removed_result = fal.run(
+                                    "fal-ai/bria/background/remove",
+                                    arguments={
+                                        "image_url": gemini_data_uri_for_bg
+                                    }
+                                )
                             
                             print(f"Gemini {part_index + 1} background removal result:", gemini_bg_removed_result)
                             
