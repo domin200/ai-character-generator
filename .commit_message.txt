@@ -1,1 +1,1 @@
-🐛 Replicate API 반환값 처리 개선: 문자열과 객체 모두 지원
+⚡ API 병렬 처리 구현: ThreadPoolExecutor로 3개 API 동시 실행 및 실시간 표시

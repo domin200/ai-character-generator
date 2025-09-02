@@ -630,8 +630,12 @@
             .then(data => {
                 console.log('Generate response received:', data);
                 
-                if (data.success && data.results) {
-                    // 서버에서 바로 결과를 받은 경우 처리
+                if (data.success && data.check_progress) {
+                    // 병렬 처리 시작, 진행상황 확인 시작
+                    console.log('Starting parallel processing, checking progress...');
+                    checkProgress();
+                } else if (data.success && data.results) {
+                    // 이전 방식 (동기 처리) 호환성 유지
                     console.log('Direct results received:', data.results);
                     
                     // Replicate 결과 처리 (첫 번째 API)

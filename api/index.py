@@ -3,6 +3,8 @@ import fal_client
 from flask import Flask, render_template, request, session, jsonify
 import base64
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 app = Flask(__name__, template_folder='../templates')
 app.secret_key = 'banana-ai-character-generator-secret-key-2024'
@@ -89,76 +91,106 @@ def generate_image():
         # 이미지 데이터 준비
         image_data = uploaded_file.read()
         
-        # Vercel Pro: 60초 제한으로 모든 API 한 번에 처리
-        print("Processing all APIs with Vercel Pro 60s timeout...")
+        # 병렬 처리로 모든 API 동시 실행
+        print("Processing all APIs in parallel...")
         
         results = {}
+        session_lock = threading.Lock()
         
-        # 1. Replicate API 처리
-        try:
-            replicate_result = process_replicate_api_direct(image_data)
-            if replicate_result:
-                results.update({
-                    'result_image': True,
-                    'result_image_url': replicate_result,
-                    'result_image_filename': 'mirai_replicate_default.png',
-                    'result_image_ready': True
-                })
-                session.update(results)
-                print(f"Replicate API completed successfully: {replicate_result[:100]}...")
-            else:
-                print("Replicate API returned None result")
-        except Exception as e:
-            print(f"Replicate API error: {e}")
-            import traceback
-            print(f"Replicate traceback: {traceback.format_exc()}")
+        def process_replicate_wrapper():
+            try:
+                replicate_result = process_replicate_api_direct(image_data)
+                if replicate_result:
+                    data = {
+                        'result_image': True,
+                        'result_image_url': replicate_result,
+                        'result_image_filename': 'mirai_replicate_default.png',
+                        'result_image_ready': True
+                    }
+                    with session_lock:
+                        results.update(data)
+                        session.update(data)
+                    print(f"Replicate API completed: {replicate_result[:100]}...")
+                    return ('replicate', data)
+                else:
+                    print("Replicate API returned None")
+                    return ('replicate', None)
+            except Exception as e:
+                print(f"Replicate API error: {e}")
+                import traceback
+                print(f"Replicate traceback: {traceback.format_exc()}")
+                return ('replicate', None)
         
-        # 2. FAL API 처리  
-        try:
-            fal_result = process_fal_api_direct(image_data)
-            if fal_result:
-                fal_data = {
-                    'result_image_2': True,
-                    'result_image_2_url': fal_result,
-                    'result_image_2_filename': 'mirai_falai_default.png',
-                    'result_image_2_ready': True
-                }
-                results.update(fal_data)
-                session.update(fal_data)
-                print("FAL API completed")
-        except Exception as e:
-            print(f"FAL API error: {e}")
+        def process_fal_wrapper():
+            try:
+                fal_result = process_fal_api_direct(image_data)
+                if fal_result:
+                    data = {
+                        'result_image_2': True,
+                        'result_image_2_url': fal_result,
+                        'result_image_2_filename': 'mirai_falai_default.png',
+                        'result_image_2_ready': True
+                    }
+                    with session_lock:
+                        results.update(data)
+                        session.update(data)
+                    print("FAL API completed")
+                    return ('fal', data)
+                return ('fal', None)
+            except Exception as e:
+                print(f"FAL API error: {e}")
+                return ('fal', None)
         
-        # 3. Gemini API 처리
-        try:
-            gemini_results = process_gemini_api_direct(image_data, uploaded_file.filename)
-            if gemini_results and gemini_results.get('urls'):
-                emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
-                filenames = []
-                for i in range(len(gemini_results['urls'])):
-                    emotion = emotion_tags[i] if i < len(emotion_tags) else f'emotion_{i+1}'
-                    filenames.append(f'mirai_gemini_{emotion}.png')
-                
-                gemini_data = {
-                    'result_image_3': True,
-                    'result_image_3_url': gemini_results['urls'][0],
-                    'result_image_3_all_urls': gemini_results['urls'],
-                    'result_image_3_count': len(gemini_results['urls']),
-                    'result_image_3_filename': filenames[0] if filenames else 'mirai_gemini_default.png',
-                    'result_image_3_filenames': filenames,
-                    'result_image_3_ready': True
-                }
-                results.update(gemini_data)
-                session.update(gemini_data)
-                print("Gemini API completed")
-        except Exception as e:
-            print(f"Gemini API error: {e}")
+        def process_gemini_wrapper():
+            try:
+                gemini_results = process_gemini_api_direct(image_data, uploaded_file.filename)
+                if gemini_results and gemini_results.get('urls'):
+                    emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
+                    filenames = []
+                    for i in range(len(gemini_results['urls'])):
+                        emotion = emotion_tags[i] if i < len(emotion_tags) else f'emotion_{i+1}'
+                        filenames.append(f'mirai_gemini_{emotion}.png')
+                    
+                    data = {
+                        'result_image_3': True,
+                        'result_image_3_url': gemini_results['urls'][0],
+                        'result_image_3_all_urls': gemini_results['urls'],
+                        'result_image_3_count': len(gemini_results['urls']),
+                        'result_image_3_filename': filenames[0] if filenames else 'mirai_gemini_default.png',
+                        'result_image_3_filenames': filenames,
+                        'result_image_3_ready': True
+                    }
+                    with session_lock:
+                        results.update(data)
+                        session.update(data)
+                    print("Gemini API completed")
+                    return ('gemini', data)
+                return ('gemini', None)
+            except Exception as e:
+                print(f"Gemini API error: {e}")
+                return ('gemini', None)
+        
+        # ThreadPoolExecutor로 병렬 실행
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [
+                executor.submit(process_replicate_wrapper),
+                executor.submit(process_fal_wrapper),
+                executor.submit(process_gemini_wrapper)
+            ]
+            
+            # 완료된 순서대로 처리
+            for future in as_completed(futures):
+                api_name, result = future.result()
+                if result:
+                    print(f"{api_name} completed and saved to session")
         
         print(f"All processing completed. Results: {len(results)} items")
+        
+        # 처리 시작 응답 반환 (클라이언트가 진행상황 체크 시작)
         return jsonify({
-            'success': True, 
-            'message': '모든 이미지 처리가 완료되었습니다!',
-            'results': results
+            'success': True,
+            'message': '이미지 처리를 시작했습니다.',
+            'check_progress': True
         })
         
     except Exception as e:
