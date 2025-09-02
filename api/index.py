@@ -8,6 +8,7 @@ import os
 app = Flask(__name__, template_folder='../templates')
 app.secret_key = 'banana-ai-character-generator-secret-key-2024'
 
+
 # 웹 배포용 - 로컬 저장 제거
 
 @app.route('/')
