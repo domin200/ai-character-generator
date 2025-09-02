@@ -628,6 +628,8 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Generate response received:', data);
+                
                 if (data.success && data.results) {
                     // 서버에서 바로 결과를 받은 경우 처리
                     console.log('Direct results received:', data.results);
@@ -660,6 +662,7 @@
                     showToast('모든 이미지가 성공적으로 생성되었습니다!', 'success');
                 } else {
                     // 기존 방식으로 진행상황 확인
+                    console.log('No direct results, starting progress check...');
                     checkProgress();
                 }
             })
