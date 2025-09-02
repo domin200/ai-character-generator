@@ -189,8 +189,15 @@ def process_replicate_api_direct(image_data):
             input=api_input
         )
         
-        # 생성된 캐릭터 이미지 URL 획득 - .url() 메서드 사용
-        character_url = output_character.url()
+        # 생성된 캐릭터 이미지 URL 획득
+        # output_character가 문자열인 경우와 객체인 경우 모두 처리
+        if isinstance(output_character, str):
+            character_url = output_character
+        elif hasattr(output_character, 'url'):
+            character_url = output_character.url()
+        else:
+            character_url = str(output_character)
+        
         print(f"Replicate character generated: {character_url}")
         
         # 2단계: 배경 제거 API 호출
