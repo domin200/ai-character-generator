@@ -625,10 +625,49 @@
             fetch('/generate', {
                 method: 'POST',
                 body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.results) {
+                    // 서버에서 바로 결과를 받은 경우 처리
+                    console.log('Direct results received:', data.results);
+                    
+                    // Replicate 결과 처리
+                    if (data.results.result_image_url) {
+                        displayImage('result-container', data.results.result_image_url, '변환된 이미지 (replicate)', data.results.result_image_filename);
+                        currentProgress.image1 = true;
+                    }
+                    
+                    // FAL 결과 처리
+                    if (data.results.result_image_2_url) {
+                        displayImage('result-container-2', data.results.result_image_2_url, '변환된 이미지 (falai)', data.results.result_image_2_filename);
+                        currentProgress.image2 = true;
+                    }
+                    
+                    // Gemini 결과 처리
+                    if (data.results.result_image_3_all_urls && data.results.result_image_3_all_urls.length > 0) {
+                        if (data.results.result_image_3_all_urls.length > 1) {
+                            displayGeminiGallery(data.results.result_image_3_all_urls, data.results.result_image_3_count, data.results.result_image_3_filenames);
+                        } else {
+                            displayImage('result-container-3', data.results.result_image_3_url, '변환된 이미지 (gemini)', data.results.result_image_3_filename);
+                        }
+                        currentProgress.image3 = true;
+                    }
+                    
+                    // 모든 처리 완료
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = '🚀 캐릭터 변환 시작';
+                    showToast('모든 이미지가 성공적으로 생성되었습니다!', 'success');
+                } else {
+                    // 기존 방식으로 진행상황 확인
+                    checkProgress();
+                }
+            })
+            .catch(error => {
+                console.error('Generate request failed:', error);
+                // 오류 발생시에도 진행상황 확인 시도
+                checkProgress();
             });
-            
-            // 진행 상황 확인 시작
-            checkProgress();
         });
         
         // 진행 상황 확인 함수

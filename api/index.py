@@ -89,28 +89,80 @@ def generate_image():
         # 이미지 데이터 준비
         image_data = uploaded_file.read()
         
-        # 동기적으로 각 API 순차 실행
+        # 동기적으로 각 API 순차 실행하고 결과 수집
         print("Starting synchronous image processing...")
         
+        results = {}
+        
         # 1. Replicate API 처리
-        process_replicate_api(image_data)
-        print("Replicate API completed")
+        try:
+            replicate_result = process_replicate_api_direct(image_data)
+            if replicate_result:
+                results.update({
+                    'result_image': True,
+                    'result_image_url': replicate_result,
+                    'result_image_filename': 'mirai_replicate_default.png',
+                    'result_image_ready': True
+                })
+                session.update(results)
+                print("Replicate API completed")
+        except Exception as e:
+            print(f"Replicate API error: {e}")
         
         # 2. FAL API 처리  
-        process_fal_api(image_data)
-        print("FAL API completed")
+        try:
+            fal_result = process_fal_api_direct(image_data)
+            if fal_result:
+                fal_data = {
+                    'result_image_2': True,
+                    'result_image_2_url': fal_result,
+                    'result_image_2_filename': 'mirai_falai_default.png',
+                    'result_image_2_ready': True
+                }
+                results.update(fal_data)
+                session.update(fal_data)
+                print("FAL API completed")
+        except Exception as e:
+            print(f"FAL API error: {e}")
         
         # 3. Gemini API 처리
-        process_gemini_api(image_data, uploaded_file.filename)
-        print("Gemini API completed")
+        try:
+            gemini_results = process_gemini_api_direct(image_data, uploaded_file.filename)
+            if gemini_results and gemini_results.get('urls'):
+                emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
+                filenames = []
+                for i in range(len(gemini_results['urls'])):
+                    emotion = emotion_tags[i] if i < len(emotion_tags) else f'emotion_{i+1}'
+                    filenames.append(f'mirai_gemini_{emotion}.png')
+                
+                gemini_data = {
+                    'result_image_3': True,
+                    'result_image_3_url': gemini_results['urls'][0],
+                    'result_image_3_all_urls': gemini_results['urls'],
+                    'result_image_3_count': len(gemini_results['urls']),
+                    'result_image_3_filename': filenames[0] if filenames else 'mirai_gemini_default.png',
+                    'result_image_3_filenames': filenames,
+                    'result_image_3_ready': True
+                }
+                results.update(gemini_data)
+                session.update(gemini_data)
+                print("Gemini API completed")
+        except Exception as e:
+            print(f"Gemini API error: {e}")
         
-        return jsonify({'success': True, 'message': '모든 이미지 처리가 완료되었습니다!'})
+        print(f"All processing completed. Results: {len(results)} items")
+        return jsonify({
+            'success': True, 
+            'message': '모든 이미지 처리가 완료되었습니다!',
+            'results': results
+        })
         
     except Exception as e:
         print(f"Generate image error: {str(e)}")
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
-def process_replicate_api(image_data):
+def process_replicate_api_direct(image_data):
+    """Replicate API 직접 처리 및 결과 반환"""
     try:
         # MIME 타입 결정 (기본값)
         mime_type = 'image/jpeg'
@@ -139,12 +191,6 @@ def process_replicate_api(image_data):
         # 2단계: 배경 제거 API 호출
         print("Step 2: Removing background...")
         
-        # fal_client 진행 상황 처리 함수
-        def on_queue_update(update):
-            if isinstance(update, fal_client.InProgress):
-                for log in update.logs:
-                    print(log["message"])
-        
         # Replicate 결과 URL을 배경 제거 API에 전달
         result = fal_client.subscribe(
             "fal-ai/bria/background/remove",
@@ -152,20 +198,18 @@ def process_replicate_api(image_data):
                 "image_url": character_url
             },
             with_logs=True,
-            on_queue_update=on_queue_update,
         )
         
         print("Background removal result:", result)
         
-        # 첫 번째 이미지 완성 표시 - 직접 URL 저장
-        session['result_image_url'] = result['image']['url']
-        session['result_image_filename'] = 'mirai_replicate_default.png'
-        session['result_image_ready'] = True
+        return result['image']['url']
         
     except Exception as e:
         print(f"Replicate API error: {str(e)}")
+        return None
 
-def process_fal_api(image_data):
+def process_fal_api_direct(image_data):
+    """FAL API 직접 처리 및 결과 반환"""
     try:
         # MIME 타입 결정
         mime_type = 'image/jpeg'
@@ -173,12 +217,6 @@ def process_fal_api(image_data):
         # 원본 이미지를 base64로 인코딩
         original_base64 = base64.b64encode(image_data).decode('utf-8')
         original_data_uri = f"data:{mime_type};base64,{original_base64}"
-        
-        # fal_client 진행 상황 처리 함수
-        def on_queue_update(update):
-            if isinstance(update, fal_client.InProgress):
-                for log in update.logs:
-                    print(log["message"])
         
         # nano-banana/edit API 호출
         edit_result = fal_client.subscribe(
@@ -188,7 +226,6 @@ def process_fal_api(image_data):
                 "image_urls": [original_data_uri]
             },
             with_logs=True,
-            on_queue_update=on_queue_update,
         )
         
         print("nano-banana/edit result:", edit_result)
@@ -203,18 +240,15 @@ def process_fal_api(image_data):
                 "image_url": edit_result['images'][0]['url']
             },
             with_logs=True,
-            on_queue_update=on_queue_update,
         )
         
         print("Edit background removal result:", edit_bg_removed_result)
         
-        # 두 번째 이미지 완성 표시 - 직접 URL 저장
-        session['result_image_2_url'] = edit_bg_removed_result['image']['url']
-        session['result_image_2_filename'] = 'mirai_falai_default.png'
-        session['result_image_2_ready'] = True
+        return edit_bg_removed_result['image']['url']
         
     except Exception as e:
         print(f"FAL API error: {str(e)}")
+        return None
 
 def process_gemini_api(image_data, filename):
     try:
@@ -321,6 +355,98 @@ def process_gemini_api(image_data, filename):
         
     except Exception as e:
         print(f"Gemini API error: {str(e)}")
+
+def process_gemini_api_direct(image_data, filename):
+    """Gemini API 직접 처리 및 결과 반환"""
+    try:
+        # MIME 타입 결정
+        filename_lower = filename.lower()
+        if filename_lower.endswith('.png'):
+            mime_type = 'image/png'
+        elif filename_lower.endswith('.jpg') or filename_lower.endswith('.jpeg'):
+            mime_type = 'image/jpeg'
+        elif filename_lower.endswith('.webp'):
+            mime_type = 'image/webp'
+        elif filename_lower.endswith('.gif'):
+            mime_type = 'image/gif'
+        else:
+            mime_type = 'image/jpeg'  # 기본값
+        
+        # Gemini API 호출
+        gemini_api_key = os.environ.get('GEMINI_API_KEY', 'AIzaSyBIFu5xH4JCu__xfvEnFG1GEQR3APZyKJI')
+        gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
+        
+        gemini_headers = {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': gemini_api_key
+        }
+        
+        # 원본 이미지를 Gemini API 형식으로 준비
+        image_base64_for_gemini = base64.b64encode(image_data).decode('utf-8')
+        
+        gemini_payload = {
+            "contents": [{
+                "parts": [
+                    {
+                        "text": "Here's the full-body standing illustration of the character for a game dialogue window, keeping only the character with a transparent background. Five standing illustrations should be generated with slight variations in expression and pose: Default, Smiling (happy), Sad, Angry (cute pouting), Embarrassed"
+                    },
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": image_base64_for_gemini
+                        }
+                    }
+                ]
+            }]
+        }
+        
+        import requests
+        gemini_response = requests.post(gemini_url, headers=gemini_headers, json=gemini_payload)
+        
+        if gemini_response.status_code == 200:
+            gemini_result = gemini_response.json()
+            
+            # base64 데이터 추출 - 여러 이미지 처리
+            gemini_image_urls = []
+            if 'candidates' in gemini_result and len(gemini_result['candidates']) > 0:
+                candidate = gemini_result['candidates'][0]
+                if 'content' in candidate and 'parts' in candidate['content']:
+                    for part_index, part in enumerate(candidate['content']['parts']):
+                        if 'inlineData' in part:
+                            print(f"Processing Gemini image {part_index + 1}...")
+                            
+                            # Gemini 이미지를 base64로 인코딩
+                            gemini_image_data = base64.b64decode(part['inlineData']['data'])
+                            gemini_base64_for_bg = base64.b64encode(gemini_image_data).decode('utf-8')
+                            gemini_data_uri_for_bg = f"data:image/png;base64,{gemini_base64_for_bg}"
+                            
+                            # 각 Gemini 이미지의 배경 제거
+                            print(f"Removing background from Gemini image {part_index + 1}...")
+                            
+                            # Gemini 이미지의 배경 제거
+                            gemini_bg_removed_result = fal_client.subscribe(
+                                "fal-ai/bria/background/remove",
+                                arguments={
+                                    "image_url": gemini_data_uri_for_bg
+                                },
+                                with_logs=True,
+                            )
+                            
+                            print(f"Gemini {part_index + 1} background removal result:", gemini_bg_removed_result)
+                            
+                            # 배경 제거된 이미지 URL 저장
+                            gemini_image_urls.append(gemini_bg_removed_result['image']['url'])
+                
+                # 결과 반환
+                if gemini_image_urls:
+                    print(f"Total {len(gemini_image_urls)} Gemini images processed")
+                    return {'urls': gemini_image_urls}
+        
+        return None
+        
+    except Exception as e:
+        print(f"Gemini API error: {str(e)}")
+        return None
 
 # Vercel 서버리스 함수
 app = app
