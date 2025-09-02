@@ -1,0 +1,4 @@
+Flask==2.3.3
+replicate==0.15.4
+fal-client==0.4.1
+requests==2.31.0

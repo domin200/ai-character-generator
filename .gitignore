@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Flask instance folder
+instance/
+
+# Local development
+.env
+.DS_Store
+
+# Generated images and temp files
+generated_images/
+temp_uploads/
+
+# Node modules
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
