@@ -2,7 +2,6 @@ import replicate
 import fal_client
 from flask import Flask, render_template, request, session, jsonify
 import base64
-import threading
 import os
 
 app = Flask(__name__, template_folder='../templates')
@@ -82,9 +81,6 @@ def generate_image():
         session.pop('result_image_3_url', None)
         session.pop('result_image_3_all_urls', None)
         
-        # 비동기 처리를 위해 백그라운드 스레드로 시작
-        import threading
-        
         uploaded_file = request.files.get('image')
         
         if not uploaded_file or not uploaded_file.filename:
@@ -93,18 +89,25 @@ def generate_image():
         # 이미지 데이터 준비
         image_data = uploaded_file.read()
         
-        # 각 API를 별도 스레드로 실행
-        thread1 = threading.Thread(target=process_replicate_api, args=(image_data,))
-        thread2 = threading.Thread(target=process_fal_api, args=(image_data,))
-        thread3 = threading.Thread(target=process_gemini_api, args=(image_data, uploaded_file.filename))
+        # 동기적으로 각 API 순차 실행
+        print("Starting synchronous image processing...")
         
-        thread1.start()
-        thread2.start() 
-        thread3.start()
+        # 1. Replicate API 처리
+        process_replicate_api(image_data)
+        print("Replicate API completed")
         
-        return jsonify({'success': True, 'message': '이미지 처리를 시작했습니다!'})
+        # 2. FAL API 처리  
+        process_fal_api(image_data)
+        print("FAL API completed")
+        
+        # 3. Gemini API 처리
+        process_gemini_api(image_data, uploaded_file.filename)
+        print("Gemini API completed")
+        
+        return jsonify({'success': True, 'message': '모든 이미지 처리가 완료되었습니다!'})
         
     except Exception as e:
+        print(f"Generate image error: {str(e)}")
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
 def process_replicate_api(image_data):
