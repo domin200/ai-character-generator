@@ -1,1 +1,1 @@
-🚀 Vercel 배포 성공: REST API 최적화 적용
+✨ FAL AI 배경 제거 API를 Gemini 이미지에 적용

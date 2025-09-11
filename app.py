@@ -2,9 +2,13 @@ import replicate
 from flask import Flask, render_template, request, jsonify
 import base64
 import time
+import fal_client
 
 app = Flask(__name__)
 app.secret_key = 'banana-ai-character-generator-secret-key-2024'
+
+# FAL AI API 키 설정
+fal_client.api_key = "3d0bf45f-f7de-4be5-b85b-e9522bf4901e:9461d2b0cccf9798e447725d2bf54027"
 
 # 전역 상태 저장소
 app_state = {}
@@ -334,13 +338,44 @@ def process_gemini_api_with_url(image_url):
                             mime_type = part.inline_data.mime_type
                             
                             # base64 데이터 URI 생성
-                            data_uri = f"data:{mime_type};base64,{image_data}"
+                            original_data_uri = f"data:{mime_type};base64,{image_data}"
+                            
+                            # FAL AI로 배경 제거
+                            try:
+                                print(f"Removing background for {emotion_tag}...")
+                                fal_result = fal_client.run(
+                                    "fal-ai/bria/background/remove",
+                                    arguments={
+                                        "image_url": original_data_uri
+                                    }
+                                )
+                                
+                                # FAL AI 결과에서 이미지 URL 추출
+                                if fal_result and 'image' in fal_result:
+                                    bg_removed_url = fal_result['image']['url']
+                                    
+                                    # URL을 base64로 변환
+                                    import requests
+                                    response_fal = requests.get(bg_removed_url)
+                                    if response_fal.status_code == 200:
+                                        bg_removed_base64 = base64.b64encode(response_fal.content).decode('utf-8')
+                                        data_uri = f"data:image/png;base64,{bg_removed_base64}"
+                                    else:
+                                        print(f"Failed to download FAL result, using original")
+                                        data_uri = original_data_uri
+                                else:
+                                    print(f"FAL API didn't return image, using original")
+                                    data_uri = original_data_uri
+                                    
+                            except Exception as e:
+                                print(f"FAL background removal error: {e}")
+                                data_uri = original_data_uri
                             
                             filename = f"mirai_gemini_{emotion_tag}.png"
                             gemini_image_urls.append(data_uri)
                             gemini_filenames.append(filename)
                             
-                            print(f"✅ Generated {emotion_tag} expression")
+                            print(f"✅ Generated {emotion_tag} expression with transparent background")
                             break
                         # 텍스트만 있는 경우
                         elif hasattr(part, 'text'):
