@@ -1,5 +1,4 @@
 Flask==2.3.3
 replicate==0.15.4
 requests==2.31.0
-google-generativeai==0.8.5
 Pillow==11.3.0

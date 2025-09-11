@@ -153,13 +153,10 @@ def process_gemini_api_with_url(image_url):
             return
 
         try:
-            import google.generativeai as genai
             import requests
             from PIL import Image
             from io import BytesIO
-            
-            # Gemini 설정
-            genai.configure(api_key=gemini_api_key)
+            import json
             
             # Replicate 이미지 다운로드
             print("Downloading Replicate image...")
@@ -168,12 +165,16 @@ def process_gemini_api_with_url(image_url):
                 print(f"Failed to download image from {image_url}")
                 return
             
-            # PIL Image로 변환
-            replicate_image = Image.open(BytesIO(response.content))
-            print(f"Replicate image downloaded: {replicate_image.size}")
+            # 이미지를 base64로 인코딩
+            image_bytes = response.content
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
             
-            # Gemini 2.5 Flash Image Preview 모델 사용
-            model = genai.GenerativeModel('gemini-2.5-flash-image-preview')
+            # Gemini REST API 설정
+            api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
+            headers = {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': gemini_api_key
+            }
             
             # 5가지 표정 생성
             expressions = [
@@ -191,35 +192,55 @@ def process_gemini_api_with_url(image_url):
             for expression, emotion_tag in zip(expressions, emotion_tags):
                 print(f"Generating {emotion_tag} expression...")
                 
-                # 프롬프트 생성 - Replicate 이미지를 참조하여 새로운 표정 생성
+                # 프롬프트 생성
                 prompt = f"""Create a full-body standing illustration of this character with {expression}.
                 Keep the exact same character design, art style, and outfit from the input image.
                 Make it suitable for a game dialogue window with transparent background.
                 Style: kawaii anime character, clean outlines, vibrant colors."""
                 
+                # 요청 페이로드
+                payload = {
+                    "contents": [{
+                        "parts": [
+                            {
+                                "inline_data": {
+                                    "mime_type": "image/png",
+                                    "data": image_base64
+                                }
+                            },
+                            {
+                                "text": prompt
+                            }
+                        ]
+                    }]
+                }
+                
                 try:
-                    # Gemini에 이미지와 프롬프트 전송하여 새 이미지 생성
-                    response = model.generate_content([replicate_image, prompt])
+                    # Gemini API 호출
+                    api_response = requests.post(api_url, headers=headers, json=payload)
                     
-                    # 생성된 이미지 추출
-                    if response.parts:
-                        for part in response.parts:
-                            # inline_data가 있으면 이미지가 생성된 것
-                            if hasattr(part, 'inline_data') and part.inline_data:
-                                image_data = part.inline_data.data
-                                mime_type = part.inline_data.mime_type
-                                
-                                # base64 데이터 URI 생성
-                                data_uri = f"data:{mime_type};base64,{image_data}"
-                                
-                                gemini_image_urls.append(data_uri)
-                                print(f"✅ Generated {emotion_tag} expression")
-                                break
-                            # 텍스트만 있는 경우
-                            elif hasattr(part, 'text'):
-                                print(f"Gemini returned text for {emotion_tag}: {part.text[:100]}...")
+                    if api_response.status_code == 200:
+                        result = api_response.json()
+                        
+                        # 생성된 이미지 추출
+                        if 'candidates' in result and result['candidates']:
+                            candidate = result['candidates'][0]
+                            if 'content' in candidate and 'parts' in candidate['content']:
+                                for part in candidate['content']['parts']:
+                                    if 'inlineData' in part:
+                                        image_data = part['inlineData']['data']
+                                        mime_type = part['inlineData'].get('mimeType', 'image/png')
+                                        
+                                        # base64 데이터 URI 생성
+                                        data_uri = f"data:{mime_type};base64,{image_data}"
+                                        gemini_image_urls.append(data_uri)
+                                        print(f"✅ Generated {emotion_tag} expression")
+                                        break
+                                    elif 'text' in part:
+                                        print(f"Gemini returned text for {emotion_tag}: {part['text'][:100]}...")
                     else:
-                        print(f"No image generated for {emotion_tag}")
+                        print(f"Gemini API error for {emotion_tag}: {api_response.status_code}")
+                        print(f"Response: {api_response.text}")
                         
                 except Exception as e:
                     print(f"Error generating {emotion_tag}: {e}")
@@ -238,11 +259,8 @@ def process_gemini_api_with_url(image_url):
                 app_state['result_image_3_ready'] = True
                 print(f"✅ Total {len(gemini_image_urls)} Gemini images processed")
             
-        except ImportError as ie:
-            print(f"Gemini library import error: {ie}")
-            print("Falling back to REST API...")
         except Exception as ge:
-            print(f"Gemini genai API error: {ge}")
+            print(f"Gemini API error: {ge}")
             import traceback
             print(f"Gemini Traceback: {traceback.format_exc()}")
         
