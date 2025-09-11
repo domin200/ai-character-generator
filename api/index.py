@@ -64,13 +64,14 @@ def generate_image():
         image_data = uploaded_file.read()
         print(f"Step 3: Image data size: {len(image_data)} bytes")
         
-        # 테스트를 위해 하나씩 동기 호출
-        print("Step 4: Starting image processing...")
+        # 순차적 처리: Replicate 먼저, 그 결과를 Gemini에 전달
+        print("Step 4: Starting sequential image processing...")
         
         # Replicate 먼저 처리하고 그 결과를 Gemini에 전달
         replicate_result_url = None
         try:
             replicate_result_url = process_replicate_api(image_data)
+            print(f"Replicate completed. Result URL: {replicate_result_url}")
         except Exception as e:
             print(f"Replicate error in main: {e}")
             
@@ -78,6 +79,7 @@ def generate_image():
         if replicate_result_url:
             try:
                 process_gemini_api_with_url(replicate_result_url)  
+                print("Gemini processing completed")
             except Exception as e:
                 print(f"Gemini error in main: {e}")
         

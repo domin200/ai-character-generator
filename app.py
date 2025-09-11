@@ -1,31 +1,13 @@
 import replicate
 from flask import Flask, render_template, request, jsonify
 import base64
-import threading
 import time
 
 app = Flask(__name__)
 app.secret_key = 'banana-ai-character-generator-secret-key-2024'
 
-# 스레드 안전한 상태 저장용
-class ThreadSafeState:
-    def __init__(self):
-        self._data = {}
-        self._lock = threading.Lock()
-        
-    def set(self, key, value):
-        with self._lock:
-            self._data[key] = value
-            
-    def get(self, key, default=None):
-        with self._lock:
-            return self._data.get(key, default)
-            
-    def pop(self, key, default=None):
-        with self._lock:
-            return self._data.pop(key, default)
-
-app_state = ThreadSafeState()
+# 전역 상태 저장소
+app_state = {}
 
 # 웹 배포용 - 로컬 저장 제거
 
@@ -80,8 +62,8 @@ def reset_on_upload():
         print("=== IMAGE UPLOAD RESET: CLEARING PREVIOUS RESULTS ===")
         
         # 1. 기존 결과만 초기화 (처리 상태는 유지)
-        app_state.set('result_image_ready', False)
-        app_state.set('result_image_3_ready', False)
+        app_state['result_image_ready'] = False
+        app_state['result_image_3_ready'] = False
         
         # 2. 기존 URL들 제거
         app_state.pop('result_image_url', None)
@@ -94,7 +76,7 @@ def reset_on_upload():
         app_state.pop('result_image_3_error', None)
         
         # 4. 처리 상태 초기화
-        app_state.set('processing_started', False)
+        app_state['processing_started'] = False
         app_state.pop('processing_timestamp', None)
         app_state.pop('current_processing_id', None)
         
@@ -115,17 +97,16 @@ def generate_image():
         # ============ 완전한 상태 및 캐시 초기화 ============
         print("=== COMPLETE RESET: CLEARING ALL STATES AND CACHE ===")
         
-        # 1. 모든 기존 상태 완전 제거 (ThreadSafeState 내부 데이터 완전 초기화)
-        with app_state._lock:
-            old_keys = list(app_state._data.keys())
-            app_state._data.clear()
-            print(f"Cleared {len(old_keys)} cached state keys: {old_keys}")
+        # 1. 모든 기존 상태 완전 제거
+        old_keys = list(app_state.keys())
+        app_state.clear()
+        print(f"Cleared {len(old_keys)} cached state keys: {old_keys}")
         
         # 2. 새로운 요청용 초기 상태 설정
-        app_state.set('result_image_ready', False)
-        app_state.set('result_image_3_ready', False)
-        app_state.set('result_image_url', None)
-        app_state.set('result_image_3_url', None)
+        app_state['result_image_ready'] = False
+        app_state['result_image_3_ready'] = False
+        app_state['result_image_url'] = None
+        app_state['result_image_3_url'] = None
         
         # 3. 가비지 컬렉션 강제 실행 (메모리 정리)
         import gc
@@ -136,10 +117,9 @@ def generate_image():
         
         # 새로운 처리 시작 표시
         app_state.set('processing_started', True)
-        app_state.set('processing_timestamp', time.time())
+        app_state['processing_timestamp'] = time.time()
         
-        # 비동기 처리를 위해 백그라운드 스레드로 시작
-        import threading
+        # 순차 처리 시작
         
         uploaded_file = request.files.get('image')
         
@@ -198,19 +178,34 @@ def generate_image():
         app_state.set('image_size', len(image_data))
         app_state.set('image_filename', uploaded_file.filename)
         
-        # 각 API를 별도 스레드로 실행
-        print(f"=== Starting background threads for image processing ===")
+        # 순차적 처리: Replicate 먼저, 그 결과를 Gemini에 전달
+        print(f"=== Starting sequential image processing ===")
         print(f"Image data size: {len(image_data)} bytes")
         print(f"Image filename: {uploaded_file.filename}")
         
-        thread1 = threading.Thread(target=process_replicate_api, args=(image_data,))
-        thread2 = threading.Thread(target=process_gemini_api, args=(image_data, uploaded_file.filename))
+        # 1. Replicate로 캐릭터 생성
+        print("Step 1: Processing with Replicate...")
+        replicate_result_url = None
+        try:
+            replicate_result_url = process_replicate_api(image_data)
+            print(f"Replicate completed. Result URL: {replicate_result_url}")
+        except Exception as e:
+            print(f"Replicate error: {e}")
+            import traceback
+            traceback.print_exc()
         
-        print("Starting Replicate thread...")
-        thread1.start()
-        print("Starting Gemini thread...")
-        thread2.start()
-        print("All threads started successfully!")
+        # 2. Replicate 결과를 Gemini에 전달
+        if replicate_result_url:
+            print("Step 2: Processing with Gemini using Replicate result...")
+            try:
+                process_gemini_api_with_url(replicate_result_url)
+                print("Gemini processing completed")
+            except Exception as e:
+                print(f"Gemini error: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print("Replicate failed, skipping Gemini")
         
         return jsonify({'success': True, 'message': '이미지 처리를 시작했습니다!'})
         
@@ -258,37 +253,25 @@ def process_replicate_api(image_data):
         print(f"Replicate character generated: {character_url}")
         
         # 결과 저장 (배경 제거 없이)
-        app_state.set('result_image_url', character_url)
-        app_state.set('result_image_filename', 'mirai_replicate_default.png')
-        app_state.set('result_image_ready', True)
+        app_state['result_image_url'] = character_url
+        app_state['result_image_filename'] = 'mirai_replicate_default.png'
+        app_state['result_image_ready'] = True
         print(f"✅ Replicate result saved: {character_url}")
+        
+        # Gemini에서 사용할 URL 반환
+        return character_url
         
     except Exception as e:
         print(f"=== Replicate API ERROR ===: {str(e)}")
         import traceback
         traceback.print_exc()
-        app_state.set('result_image_error', str(e))
+        app_state['result_image_error'] = str(e)
 
-def process_gemini_api(image_data, filename):
+def process_gemini_api_with_url(image_url):
+    """Replicate에서 생성된 이미지 URL을 사용하여 Gemini 처리"""
     try:
-        # 이미지 데이터 무결성 확인  
-        import hashlib
-        data_hash = hashlib.md5(image_data).hexdigest()[:8]
-        print(f"=== Starting Gemini API processing === (hash: {data_hash})")
-        print(f"Gemini - Processing image data: {len(image_data)} bytes, filename: {filename}")
-        
-        # MIME 타입 결정
-        filename_lower = filename.lower()
-        if filename_lower.endswith('.png'):
-            mime_type = 'image/png'
-        elif filename_lower.endswith('.jpg') or filename_lower.endswith('.jpeg'):
-            mime_type = 'image/jpeg'
-        elif filename_lower.endswith('.webp'):
-            mime_type = 'image/webp'
-        elif filename_lower.endswith('.gif'):
-            mime_type = 'image/gif'
-        else:
-            mime_type = 'image/jpeg'  # 기본값
+        print(f"=== Starting Gemini API with Replicate URL ===")
+        print(f"Using Replicate image URL: {image_url}")
         
         # Gemini API 호출
         gemini_api_key = "AIzaSyBIFu5xH4JCu__xfvEnFG1GEQR3APZyKJI"
@@ -299,14 +282,22 @@ def process_gemini_api(image_data, filename):
             'X-goog-api-key': gemini_api_key
         }
         
-        # 원본 이미지를 Gemini API 형식으로 준비
+        # URL에서 이미지 다운로드하여 base64로 변환
+        import requests
+        response = requests.get(image_url)
+        if response.status_code != 200:
+            print(f"Failed to download image from {image_url}")
+            return
+        
+        image_data = response.content
+        mime_type = response.headers.get('content-type', 'image/png')
         image_base64_for_gemini = base64.b64encode(image_data).decode('utf-8')
         
         gemini_payload = {
             "contents": [{
                 "parts": [
                     {
-                        "text": "Here's the full-body standing illustration of the character for a game dialogue window, keeping only the character with a transparent background. Five standing illustrations should be generated with slight variations in expression and pose: Default, Smiling (happy), Sad, Angry (cute pouting), Embarrassed"
+                        "text": "Based on this character, create five standing illustrations with slight variations in expression and pose: Default, Smiling (happy), Sad, Angry (cute pouting), Embarrassed. Keep the same character design, art style, and transparent background."
                     },
                     {
                         "inlineData": {
@@ -357,18 +348,18 @@ def process_gemini_api(image_data, filename):
                 
                 # 모든 Gemini 이미지 URL과 파일명을 상태에 저장
                 if gemini_image_urls:
-                    app_state.set('result_image_3_url', gemini_image_urls[0])  # 첫 번째 이미지
-                    app_state.set('result_image_3_all_urls', gemini_image_urls)  # 모든 이미지 URL
-                    app_state.set('result_image_3_filenames', gemini_filenames)  # 모든 파일명
-                    app_state.set('result_image_3_filename', gemini_filenames[0])  # 첫 번째 파일명
-                    app_state.set('result_image_3_ready', True)
+                    app_state['result_image_3_url'] = gemini_image_urls[0]  # 첫 번째 이미지
+                    app_state['result_image_3_all_urls'] = gemini_image_urls  # 모든 이미지 URL
+                    app_state['result_image_3_filenames'] = gemini_filenames  # 모든 파일명
+                    app_state['result_image_3_filename'] = gemini_filenames[0]  # 첫 번째 파일명
+                    app_state['result_image_3_ready'] = True
                     print(f"✅ Total {len(gemini_image_urls)} Gemini images processed with filenames: {gemini_filenames}")
         
     except Exception as e:
         print(f"=== Gemini API ERROR ===: {str(e)}")
         import traceback
         traceback.print_exc()
-        app_state.set('result_image_3_error', str(e))
+        app_state['result_image_3_error'] = str(e)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)
