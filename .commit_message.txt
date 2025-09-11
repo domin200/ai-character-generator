@@ -1,1 +1,1 @@
-🐛 병렬 처리 세션 문제 해결: 전역 딕셔너리로 스레드 안전 결과 저장
+🚀 Vercel 배포 준비: FAL 제거, Replicate→Gemini 워크플로우로 api/index.py 업데이트
