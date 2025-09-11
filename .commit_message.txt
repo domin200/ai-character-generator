@@ -1,1 +1,1 @@
-✨ Gemini 2.5 Flash Image Preview로 이미지 생성 구현
+🚀 Vercel 배포 성공: REST API 최적화 적용
