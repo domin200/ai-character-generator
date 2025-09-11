@@ -9,8 +9,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "@fal-ai/client": "^1.6.2"
-  }
+  "type": "commonjs"
 }

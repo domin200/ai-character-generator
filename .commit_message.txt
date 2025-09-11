@@ -1,1 +1,1 @@
-🚀 Vercel 배포 준비: FAL 제거, Replicate→Gemini 워크플로우로 api/index.py 업데이트
+🗑️ FAL AI 완전 제거: 모든 파일에서 FAL 관련 코드 및 의존성 삭제

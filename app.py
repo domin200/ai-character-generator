@@ -1,5 +1,4 @@
 import replicate
-import fal_client
 from flask import Flask, render_template, request, jsonify
 import base64
 import threading
@@ -41,13 +40,10 @@ def check_progress():
     # 상태에서 진행 상황 확인 - 직접 API URL 반환
     result = {
         'result_image': app_state.get('result_image_ready', False),
-        'result_image_2': app_state.get('result_image_2_ready', False), 
         'result_image_3': app_state.get('result_image_3_ready', False),
         'result_image_url': app_state.get('result_image_url'),
-        'result_image_2_url': app_state.get('result_image_2_url'),
         'result_image_3_url': app_state.get('result_image_3_url'),
         'result_image_filename': app_state.get('result_image_filename'),
-        'result_image_2_filename': app_state.get('result_image_2_filename'),
         'result_image_3_filename': app_state.get('result_image_3_filename'),
         'processing_started': app_state.get('processing_started', False),
         'processing_timestamp': app_state.get('processing_timestamp'),
@@ -61,8 +57,6 @@ def check_progress():
     errors = {}
     if app_state.get('result_image_error'):
         errors['replicate_error'] = app_state.get('result_image_error')
-    if app_state.get('result_image_2_error'):
-        errors['fal_error'] = app_state.get('result_image_2_error')
     if app_state.get('result_image_3_error'):
         errors['gemini_error'] = app_state.get('result_image_3_error')
     
@@ -87,19 +81,16 @@ def reset_on_upload():
         
         # 1. 기존 결과만 초기화 (처리 상태는 유지)
         app_state.set('result_image_ready', False)
-        app_state.set('result_image_2_ready', False)
         app_state.set('result_image_3_ready', False)
         
         # 2. 기존 URL들 제거
         app_state.pop('result_image_url', None)
-        app_state.pop('result_image_2_url', None)
         app_state.pop('result_image_3_url', None)
         app_state.pop('result_image_3_all_urls', None)
         app_state.pop('result_image_3_count', None)
         
         # 3. 에러 상태 제거
         app_state.pop('result_image_error', None)
-        app_state.pop('result_image_2_error', None)
         app_state.pop('result_image_3_error', None)
         
         # 4. 처리 상태 초기화
@@ -132,10 +123,8 @@ def generate_image():
         
         # 2. 새로운 요청용 초기 상태 설정
         app_state.set('result_image_ready', False)
-        app_state.set('result_image_2_ready', False)
         app_state.set('result_image_3_ready', False)
         app_state.set('result_image_url', None)
-        app_state.set('result_image_2_url', None)
         app_state.set('result_image_3_url', None)
         
         # 3. 가비지 컬렉션 강제 실행 (메모리 정리)
@@ -215,15 +204,12 @@ def generate_image():
         print(f"Image filename: {uploaded_file.filename}")
         
         thread1 = threading.Thread(target=process_replicate_api, args=(image_data,))
-        thread2 = threading.Thread(target=process_fal_api, args=(image_data,))
-        thread3 = threading.Thread(target=process_gemini_api, args=(image_data, uploaded_file.filename))
+        thread2 = threading.Thread(target=process_gemini_api, args=(image_data, uploaded_file.filename))
         
         print("Starting Replicate thread...")
         thread1.start()
-        print("Starting FAL thread...")
-        thread2.start() 
         print("Starting Gemini thread...")
-        thread3.start()
+        thread2.start()
         print("All threads started successfully!")
         
         return jsonify({'success': True, 'message': '이미지 처리를 시작했습니다!'})
@@ -271,99 +257,17 @@ def process_replicate_api(image_data):
         
         print(f"Replicate character generated: {character_url}")
         
-        # 2단계: 배경 제거 API 호출
-        print("Step 2: Removing background...")
-        
-        # fal_client 진행 상황 처리 함수
-        def on_queue_update(update):
-            if isinstance(update, fal_client.InProgress):
-                for log in update.logs:
-                    print(log["message"])
-        
-        # Replicate 결과 URL을 배경 제거 API에 전달
-        result = fal_client.subscribe(
-            "fal-ai/bria/background/remove",
-            arguments={
-                "image_url": character_url
-            },
-            with_logs=True,
-            on_queue_update=on_queue_update,
-        )
-        
-        print("Background removal result:", result)
-        
-        # 첫 번째 이미지 완성 표시 - 상태에 저장 (Replicate = default 감정)
-        app_state.set('result_image_url', result['image']['url'])
+        # 결과 저장 (배경 제거 없이)
+        app_state.set('result_image_url', character_url)
         app_state.set('result_image_filename', 'mirai_replicate_default.png')
         app_state.set('result_image_ready', True)
-        print(f"✅ Replicate result saved as: mirai_replicate_default.png")
+        print(f"✅ Replicate result saved: {character_url}")
         
     except Exception as e:
         print(f"=== Replicate API ERROR ===: {str(e)}")
         import traceback
         traceback.print_exc()
         app_state.set('result_image_error', str(e))
-
-def process_fal_api(image_data):
-    try:
-        # 이미지 데이터 무결성 확인
-        import hashlib
-        data_hash = hashlib.md5(image_data).hexdigest()[:8]
-        print(f"=== Starting FAL API processing === (hash: {data_hash})")
-        print(f"FAL - Processing image data: {len(image_data)} bytes")
-        
-        # MIME 타입 결정
-        mime_type = 'image/jpeg'
-        
-        # 원본 이미지를 base64로 인코딩
-        original_base64 = base64.b64encode(image_data).decode('utf-8')
-        original_data_uri = f"data:{mime_type};base64,{original_base64}"
-        
-        # fal_client 진행 상황 처리 함수
-        def on_queue_update(update):
-            if isinstance(update, fal_client.InProgress):
-                for log in update.logs:
-                    print(log["message"])
-        
-        # nano-banana/edit API 호출
-        edit_result = fal_client.subscribe(
-            "fal-ai/nano-banana/edit",
-            arguments={
-                "prompt": "Here's the full-body standing illustration of the character for a game dialogue window, keeping only the character with a transparent background.",
-                "image_urls": [original_data_uri]
-            },
-            with_logs=True,
-            on_queue_update=on_queue_update,
-        )
-        
-        print("nano-banana/edit result:", edit_result)
-        
-        # 편집된 이미지의 배경 제거
-        print("Removing background from edited image...")
-        
-        # FAL API 결과 URL을 배경 제거 API에 직접 전달
-        edit_bg_removed_result = fal_client.subscribe(
-            "fal-ai/bria/background/remove",
-            arguments={
-                "image_url": edit_result['images'][0]['url']
-            },
-            with_logs=True,
-            on_queue_update=on_queue_update,
-        )
-        
-        print("Edit background removal result:", edit_bg_removed_result)
-        
-        # 두 번째 이미지 완성 표시 - 상태에 저장 (FAL = default 감정)
-        app_state.set('result_image_2_url', edit_bg_removed_result['image']['url'])
-        app_state.set('result_image_2_filename', 'mirai_falai_default.png')
-        app_state.set('result_image_2_ready', True)
-        print(f"✅ FAL result saved as: mirai_falai_default.png")
-        
-    except Exception as e:
-        print(f"=== FAL API ERROR ===: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        app_state.set('result_image_2_error', str(e))
 
 def process_gemini_api(image_data, filename):
     try:
@@ -428,12 +332,6 @@ def process_gemini_api(image_data, filename):
                     # Gemini 5가지 감정 매핑 (Default, Happy, Sad, Angry, Embarrassed 순서)
                     emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
                     
-                    # fal_client 진행 상황 처리 함수
-                    def on_queue_update(update):
-                        if isinstance(update, fal_client.InProgress):
-                            for log in update.logs:
-                                print(log["message"])
-                    
                     gemini_filenames = []  # 파일명 저장용
                     
                     for part_index, part in enumerate(candidate['content']['parts']):
@@ -450,24 +348,11 @@ def process_gemini_api(image_data, filename):
                             gemini_base64_for_bg = base64.b64encode(gemini_image_data).decode('utf-8')
                             gemini_data_uri_for_bg = f"data:image/png;base64,{gemini_base64_for_bg}"
                             
-                            # 각 Gemini 이미지의 배경 제거
-                            print(f"Removing background from Gemini image {part_index + 1} ({current_emotion})...")
-                            
-                            # Gemini 이미지의 배경 제거
-                            gemini_bg_removed_result = fal_client.subscribe(
-                                "fal-ai/bria/background/remove",
-                                arguments={
-                                    "image_url": gemini_data_uri_for_bg
-                                },
-                                with_logs=True,
-                                on_queue_update=on_queue_update,
-                            )
-                            
+                            # 배경 제거 없이 저장
                             print(f"✅ Gemini {current_emotion} result saved as: {filename}")
-                            print(f"Gemini {part_index + 1} background removal result:", gemini_bg_removed_result)
                             
-                            # 배경 제거된 이미지 URL과 파일명 저장
-                            gemini_image_urls.append(gemini_bg_removed_result['image']['url'])
+                            # base64 데이터 URI 저장
+                            gemini_image_urls.append(gemini_data_uri_for_bg)
                             gemini_filenames.append(filename)
                 
                 # 모든 Gemini 이미지 URL과 파일명을 상태에 저장
