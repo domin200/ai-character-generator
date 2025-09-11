@@ -1,1 +1,1 @@
-🔙 Gemini API 원래 구현으로 복원
+✨ Gemini 2.5 Flash Image Preview로 이미지 생성 구현

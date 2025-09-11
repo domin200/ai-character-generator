@@ -270,7 +270,7 @@ def process_replicate_api(image_data):
 def process_gemini_api_with_url(image_url):
     """Replicate에서 생성된 이미지 URL을 사용하여 Gemini 처리"""
     try:
-        print(f"=== Starting Gemini API with Replicate URL ===")
+        print(f"=== Starting Gemini 2.5 Flash Image Preview ===")
         print(f"Using Replicate image URL: {image_url}")
         
         # Gemini API 키
@@ -280,7 +280,6 @@ def process_gemini_api_with_url(image_url):
         import requests
         from PIL import Image
         from io import BytesIO
-        import io
         
         # Gemini 설정
         genai.configure(api_key=gemini_api_key)
@@ -296,33 +295,69 @@ def process_gemini_api_with_url(image_url):
         replicate_image = Image.open(BytesIO(response.content))
         print(f"Replicate image downloaded: {replicate_image.size}")
         
-        # Gemini 모델 초기화
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Gemini 2.5 Flash Image Preview 모델 사용
+        model = genai.GenerativeModel('gemini-2.5-flash-image-preview')
         
-        # Replicate에서 생성된 이미지를 기반으로 프롬프트 생성
-        prompt = """Based on this character image, analyze and describe the character in detail. 
-        Then create 5 variations with different expressions:
-        1. Default neutral expression
-        2. Smiling happy expression  
-        3. Sad expression
-        4. Angry cute pouting expression
-        5. Embarrassed blushing expression
-        Keep the same character design and art style. Style: kawaii anime character, clean outlines, vibrant colors, transparent background."""
+        # 5가지 표정 생성
+        expressions = [
+            "default neutral expression",
+            "smiling happy expression",
+            "sad expression",
+            "angry cute pouting expression",
+            "embarrassed blushing expression"
+        ]
         
-        # Gemini에 이미지와 프롬프트 전송
-        response = model.generate_content([replicate_image, prompt])
-        
-        print(f"Gemini response: {response.text[:500]}...")
-        
-        # 텍스트 응답만 받으므로 더미 이미지 생성
         gemini_image_urls = []
         gemini_filenames = []
         emotion_tags = ['default', 'happy', 'sad', 'angry', 'embarrassed']
         
-        # Replicate 이미지를 5개 복사하여 사용 (실제 Gemini 이미지 생성 대신)
-        for i, emotion_tag in enumerate(emotion_tags):
-            gemini_image_urls.append(image_url)
-            gemini_filenames.append(f"mirai_gemini_{emotion_tag}.png")
+        # 각 표정별로 이미지 생성
+        for expression, emotion_tag in zip(expressions, emotion_tags):
+            print(f"Generating {emotion_tag} expression...")
+            
+            # 프롬프트 생성 - Replicate 이미지를 참조하여 새로운 표정 생성
+            prompt = f"""Create a full-body standing illustration of this character with {expression}.
+            Keep the exact same character design, art style, and outfit from the input image.
+            Make it suitable for a game dialogue window with transparent background.
+            Style: kawaii anime character, clean outlines, vibrant colors."""
+            
+            try:
+                # Gemini에 이미지와 프롬프트 전송하여 새 이미지 생성
+                response = model.generate_content([replicate_image, prompt])
+                
+                # 생성된 이미지 추출
+                if response.parts:
+                    for part in response.parts:
+                        # inline_data가 있으면 이미지가 생성된 것
+                        if hasattr(part, 'inline_data') and part.inline_data:
+                            image_data = part.inline_data.data
+                            mime_type = part.inline_data.mime_type
+                            
+                            # base64 데이터 URI 생성
+                            data_uri = f"data:{mime_type};base64,{image_data}"
+                            
+                            filename = f"mirai_gemini_{emotion_tag}.png"
+                            gemini_image_urls.append(data_uri)
+                            gemini_filenames.append(filename)
+                            
+                            print(f"✅ Generated {emotion_tag} expression")
+                            break
+                        # 텍스트만 있는 경우
+                        elif hasattr(part, 'text'):
+                            print(f"Gemini returned text for {emotion_tag}: {part.text[:100]}...")
+                else:
+                    print(f"No image generated for {emotion_tag}")
+                    
+            except Exception as e:
+                print(f"Error generating {emotion_tag}: {e}")
+                continue
+        
+        # 이미지가 생성되지 않은 경우 Replicate 이미지 사용 (fallback)
+        if not gemini_image_urls:
+            print("⚠️ Gemini image generation failed, using Replicate image as fallback")
+            for emotion_tag in emotion_tags:
+                gemini_image_urls.append(image_url)
+                gemini_filenames.append(f"mirai_gemini_{emotion_tag}.png")
         
         # 모든 Gemini 이미지 URL과 파일명을 상태에 저장
         if gemini_image_urls:
@@ -332,8 +367,6 @@ def process_gemini_api_with_url(image_url):
             app_state['result_image_3_filename'] = gemini_filenames[0]  # 첫 번째 파일명
             app_state['result_image_3_ready'] = True
             print(f"✅ Total {len(gemini_image_urls)} Gemini images processed")
-        else:
-            print("⚠️ No Gemini images were generated")
         
     except Exception as e:
         print(f"=== Gemini API ERROR ===: {str(e)}")
