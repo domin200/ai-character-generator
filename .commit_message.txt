@@ -1,1 +1,1 @@
-✨ FAL AI 배경 제거 API를 Gemini 이미지에 적용
+🔧 FAL AI API 연결 및 응답 처리 수정

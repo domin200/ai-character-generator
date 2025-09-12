@@ -7,8 +7,9 @@ import fal_client
 app = Flask(__name__)
 app.secret_key = 'banana-ai-character-generator-secret-key-2024'
 
-# FAL AI API 키 설정
-fal_client.api_key = "3d0bf45f-f7de-4be5-b85b-e9522bf4901e:9461d2b0cccf9798e447725d2bf54027"
+# FAL AI API 키 설정 (환경변수 사용)
+import os
+os.environ['FAL_KEY'] = "3d0bf45f-f7de-4be5-b85b-e9522bf4901e:9461d2b0cccf9798e447725d2bf54027"
 
 # 전역 상태 저장소
 app_state = {}

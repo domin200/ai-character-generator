@@ -9,7 +9,7 @@ app.secret_key = 'banana-ai-character-generator-secret-key-2024'
 
 # 환경변수에서 API 키 설정
 replicate.Client(api_token=os.getenv('REPLICATE_API_TOKEN'))
-fal_client.api_key = os.getenv('FAL_KEY', '3d0bf45f-f7de-4be5-b85b-e9522bf4901e:9461d2b0cccf9798e447725d2bf54027')
+os.environ['FAL_KEY'] = os.getenv('FAL_KEY', '3d0bf45f-f7de-4be5-b85b-e9522bf4901e:9461d2b0cccf9798e447725d2bf54027')
 
 # 전역 상태 저장소
 app_state = {
