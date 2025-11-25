@@ -39,8 +39,8 @@ def clean_old_states():
     for uid in to_delete:
         del app_state[uid]
 
-# AI4컷 생성 프롬프트 생성 함수 (날짜 및 프레임 색상 동적 생성)
-def get_ai_4_cut_prompt(frame_color='black'):
+# AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃 동적 생성)
+def get_ai_4_cut_prompt(frame_color='black', layout='1x4'):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
@@ -52,11 +52,25 @@ def get_ai_4_cut_prompt(frame_color='black'):
     }
     frame_instruction = color_map.get(frame_color, 'black')
 
+    # 레이아웃별 프롬프트 생성
+    if layout == '1x3':
+        layout_instruction = "IMPORTANT: 3 images arranged in SINGLE COLUMN vertically (1x3 layout). NOT 2x2, NOT any other layout. Only vertical single column with 3 images."
+        layout_structure = "[narrow top margin] → [image 1] → [image 2] → [image 3] → [bottom section with logo, date, QR]."
+        image_count_text = "3 images"
+    elif layout == '2x2':
+        layout_instruction = "IMPORTANT: 4 images arranged in 2x2 grid layout. Two images in first row, two images in second row."
+        layout_structure = "[narrow top margin] → [Row 1: image 1 | image 2] → [Row 2: image 3 | image 4] → [bottom section with logo, date, QR]."
+        image_count_text = "4 images"
+    else:  # 1x4 (default)
+        layout_instruction = "IMPORTANT: 4 images arranged in SINGLE COLUMN vertically (1x4 layout). NOT 2x2, NOT 2x3, NOT 2x4. Only vertical single column layout."
+        layout_structure = "[narrow top margin] → [image 1] → [image 2] → [image 3] → [image 4] → [bottom section with logo, date, QR]."
+        image_count_text = "4 images"
+
     return f"""Create an AI-4-cut photo strip. Full frame size 1060x3187 pixels.
-IMPORTANT: 4 images arranged in SINGLE COLUMN vertically (1x4 layout). NOT 2x2, NOT 2x3, NOT 2x4. Only vertical single column layout.
-Each image has 4:3 aspect ratio with different natural poses and expressions.
+{layout_instruction}
+{image_count_text}, each with 4:3 aspect ratio with different natural poses and expressions.
 All {frame_instruction} frame. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
-Layout structure: [narrow top margin] → [image 1] → [image 2] → [image 3] → [image 4] → [bottom section with logo, date, QR].
+Layout structure: {layout_structure}
 At the bottom of the frame, add 'MIRAI' (use logo.png) and '{current_date}' in vertical center alignment.
 Date should be 10% of logo size, small. Do not include 'AI4컷' text.
 QR code should be inserted small and naturally at the bottom right corner of the frame (to the right of the date),
@@ -156,6 +170,10 @@ def generate_image():
         frame_color = request.form.get('frame_color', 'black')
         print(f"Frame color: {frame_color}")
 
+        # 레이아웃 가져오기
+        layout = request.form.get('layout', '1x4')
+        print(f"Layout: {layout}")
+
         # 고유 해시 생성
         import hashlib
         data_hash = hashlib.sha256(image_data).hexdigest()[:12]
@@ -179,7 +197,7 @@ def generate_image():
         print("Processing with FAL AI nano-banana-pro/edit in background thread...")
         thread = threading.Thread(
             target=process_fal_ai_4_cut,
-            args=(image_data, unique_id, frame_color),
+            args=(image_data, unique_id, frame_color, layout),
             daemon=True
         )
         thread.start()
@@ -196,11 +214,11 @@ def generate_image():
         traceback.print_exc()
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
-def process_fal_ai_4_cut(image_data, unique_id, frame_color='black'):
+def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4'):
     """FAL AI nano-banana-pro/edit로 AI4컷 생성"""
     try:
         user_state = get_user_state(unique_id)
-        print(f"=== FAL AI AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}) ===")
+        print(f"=== FAL AI AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}) ===")
 
         # 1. 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -233,7 +251,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black'):
         handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
-                "prompt": get_ai_4_cut_prompt(frame_color),
+                "prompt": get_ai_4_cut_prompt(frame_color, layout),
                 "image_urls": [user_image_uri, logo_uri, qr_uri]
             }
         )

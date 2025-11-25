@@ -214,21 +214,27 @@
             display: none;
         }
 
-        .frame-color-selector {
+        .selector-row {
             margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .selector-item {
+            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
-        .frame-color-selector label {
+        .selector-item label {
             font-size: 0.875rem;
             font-weight: 600;
             color: #ffffff;
             opacity: 0.9;
         }
 
-        .frame-color-selector select {
+        .selector-item select {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
@@ -244,7 +250,7 @@
             padding-right: 36px;
         }
 
-        .frame-color-selector select:hover {
+        .selector-item select:hover {
             background-color: rgba(255, 255, 255, 0.08);
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
@@ -252,7 +258,7 @@
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .frame-color-selector select:focus {
+        .selector-item select:focus {
             outline: none;
             border-color: #007AFF;
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
@@ -593,13 +599,23 @@
             <form action="/generate" method="post" enctype="multipart/form-data" id="upload-form">
                 <input type="file" id="image" name="image" accept="image/*" required class="hidden-file-input">
 
-                <div class="frame-color-selector">
-                    <label for="frame-color">프레임 색상</label>
-                    <select id="frame-color" name="frame_color">
-                        <option value="black" selected>검정</option>
-                        <option value="gray">회색</option>
-                        <option value="white">흰색</option>
-                    </select>
+                <div class="selector-row">
+                    <div class="selector-item">
+                        <label for="frame-color">프레임 색상</label>
+                        <select id="frame-color" name="frame_color">
+                            <option value="black" selected>검정</option>
+                            <option value="gray">회색</option>
+                            <option value="white">흰색</option>
+                        </select>
+                    </div>
+                    <div class="selector-item">
+                        <label for="layout">레이아웃</label>
+                        <select id="layout" name="layout">
+                            <option value="1x4" selected>1x4 (세로 4장)</option>
+                            <option value="1x3">1x3 (세로 3장)</option>
+                            <option value="2x2">2x2 (2줄 배치)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn" id="generate-btn" disabled>
