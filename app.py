@@ -40,6 +40,13 @@ half the size of the logo, as small as possible while maintaining QR functionali
 def index():
     return render_template('index.html')
 
+@app.route('/og-image.png')
+def og_image():
+    from flask import send_file
+    import os
+    og_path = os.path.join(os.path.dirname(__file__), 'static_image', 'og-image.png')
+    return send_file(og_path, mimetype='image/png')
+
 # 웹 배포용 - 로컬 파일 서빙 제거
 
 @app.route('/api/check_progress')

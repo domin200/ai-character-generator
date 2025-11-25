@@ -39,6 +39,13 @@ half the size of the logo, as small as possible while maintaining QR functionali
 def index():
     return render_template('index.html')
 
+@app.route('/og-image.png')
+def og_image():
+    from flask import send_file
+    import os
+    og_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static_image', 'og-image.png')
+    return send_file(og_path, mimetype='image/png')
+
 @app.route('/api/check_progress')
 def check_progress():
     # 단순화된 진행 상황 확인 - 단일 결과 이미지만
