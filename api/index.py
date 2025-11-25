@@ -19,8 +19,25 @@ else:
     if not os.getenv('FAL_KEY'):
         print("WARNING: FAL_KEY not found in environment")
 
-# 전역 상태 저장소
+# 전역 상태 저장소 (각 사용자별로 unique_id로 분리)
 app_state = {}
+
+def get_user_state(unique_id):
+    """사용자별 상태 가져오기"""
+    if unique_id not in app_state:
+        app_state[unique_id] = {}
+    return app_state[unique_id]
+
+def clean_old_states():
+    """1시간 이상 된 상태 삭제"""
+    import time
+    current_time = time.time()
+    to_delete = []
+    for uid, state in app_state.items():
+        if state.get('processing_timestamp', 0) < current_time - 3600:
+            to_delete.append(uid)
+    for uid in to_delete:
+        del app_state[uid]
 
 # AI4컷 생성 프롬프트 생성 함수 (날짜 동적 생성)
 def get_ai_4_cut_prompt():
@@ -48,32 +65,34 @@ def og_image():
 
 @app.route('/api/check_progress')
 def check_progress():
-    # 단순화된 진행 상황 확인 - 단일 결과 이미지만
+    # unique_id를 쿼리 파라미터로 받기
+    unique_id = request.args.get('id')
+
+    if not unique_id:
+        return jsonify({'error': 'ID가 필요합니다'}), 400
+
+    # 해당 사용자의 상태만 가져오기
+    user_state = get_user_state(unique_id)
+
     result = {
-        'result_ready': app_state.get('result_ready', False),
-        'result_url': app_state.get('result_url'),
-        'result_filename': app_state.get('result_filename', 'ai_4_cut.png'),
-        'processing_started': app_state.get('processing_started', False),
-        'processing_timestamp': app_state.get('processing_timestamp'),
-        'current_image_hash': app_state.get('current_image_hash'),
-        'current_processing_id': app_state.get('current_processing_id')
+        'result_ready': user_state.get('result_ready', False),
+        'result_url': user_state.get('result_url'),
+        'result_filename': user_state.get('result_filename', 'ai_4_cut.png'),
+        'processing_started': user_state.get('processing_started', False),
+        'processing_timestamp': user_state.get('processing_timestamp'),
+        'current_image_hash': user_state.get('current_image_hash'),
+        'current_processing_id': user_state.get('current_processing_id')
     }
 
     # 에러 정보 추가
-    if app_state.get('error'):
-        result['error'] = app_state.get('error')
+    if user_state.get('error'):
+        result['error'] = user_state.get('error')
 
     return jsonify(result)
 
 @app.route('/generate', methods=['POST'])
 def generate_image():
     try:
-        # 상태 초기화
-        print("=== STARTING LIFE-4-CUT GENERATION ===")
-        app_state.clear()
-        app_state['result_ready'] = False
-        app_state['processing_started'] = True
-
         # 이미지 파일 읽기
         uploaded_file = request.files.get('image')
 
@@ -95,14 +114,29 @@ def generate_image():
         data_hash = hashlib.sha256(image_data).hexdigest()[:12]
         unique_id = f"{data_hash}_{int(time.time() * 1000)}"
 
-        app_state['current_image_hash'] = data_hash
-        app_state['current_processing_id'] = unique_id
+        # 오래된 상태 정리
+        clean_old_states()
+
+        # 사용자별 상태 초기화
+        user_state = get_user_state(unique_id)
+        user_state.clear()
+        user_state['result_ready'] = False
+        user_state['processing_started'] = True
+        user_state['processing_timestamp'] = time.time()
+        user_state['current_image_hash'] = data_hash
+        user_state['current_processing_id'] = unique_id
+
+        print(f"=== STARTING LIFE-4-CUT GENERATION for {unique_id} ===")
 
         # FAL AI로 AI4컷 생성
         print("Processing with FAL AI nano-banana-pro/edit...")
-        process_fal_ai_4_cut(image_data)
+        process_fal_ai_4_cut(image_data, unique_id)
 
-        return jsonify({'success': True, 'message': 'AI4컷 생성을 시작했습니다!'})
+        return jsonify({
+            'success': True,
+            'message': 'AI4컷 생성을 시작했습니다!',
+            'id': unique_id
+        })
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -110,10 +144,11 @@ def generate_image():
         traceback.print_exc()
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
-def process_fal_ai_4_cut(image_data):
+def process_fal_ai_4_cut(image_data, unique_id):
     """FAL AI nano-banana-pro/edit로 AI4컷 생성"""
     try:
-        print("=== FAL AI AI-4-CUT GENERATION ===")
+        user_state = get_user_state(unique_id)
+        print(f"=== FAL AI AI-4-CUT GENERATION for {unique_id} ===")
 
         # 1. 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -185,11 +220,11 @@ def process_fal_ai_4_cut(image_data):
                     result_base64 = base64.b64encode(response.content).decode('utf-8')
                     data_uri_result = f"data:image/png;base64,{result_base64}"
 
-                    app_state['result_url'] = data_uri_result
-                    app_state['result_filename'] = 'ai_4_cut.png'
-                    app_state['result_ready'] = True
+                    user_state['result_url'] = data_uri_result
+                    user_state['result_filename'] = 'ai_4_cut.png'
+                    user_state['result_ready'] = True
 
-                    print("✅ AI-4-cut generation completed successfully")
+                    print(f"✅ AI-4-cut generation completed successfully for {unique_id}")
                 else:
                     raise Exception(f"Failed to download result image: {response.status_code}")
             else:
@@ -198,11 +233,11 @@ def process_fal_ai_4_cut(image_data):
             raise Exception("Invalid response from FAL AI")
 
     except Exception as e:
-        print(f"=== FAL AI ERROR ===: {str(e)}")
+        print(f"=== FAL AI ERROR for {unique_id} ===: {str(e)}")
         import traceback
         traceback.print_exc()
-        app_state['error'] = str(e)
-        app_state['result_ready'] = False
+        user_state['error'] = str(e)
+        user_state['result_ready'] = False
 
 # Vercel 서버리스 함수
 application = app

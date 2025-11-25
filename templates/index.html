@@ -408,6 +408,7 @@
 
         // 진행 상태 추적
         let isProcessing = false;
+        let currentSessionId = null;
 
         // Toast notification function
         function showToast(message, type = 'success') {
@@ -542,7 +543,11 @@
             .then(data => {
                 console.log('Generate response received:', data);
 
-                if (data.success) {
+                if (data.success && data.id) {
+                    // 세션 ID 저장
+                    currentSessionId = data.id;
+                    console.log('Session ID:', currentSessionId);
+
                     // 진행상황 확인 시작
                     console.log('Starting progress check...');
                     checkProgress();
@@ -560,7 +565,12 @@
 
         // 진행 상황 확인 함수
         function checkProgress() {
-            fetch('/api/check_progress')
+            if (!currentSessionId) {
+                console.error('No session ID available');
+                resetUI();
+                return;
+            }
+            fetch(`/api/check_progress?id=${currentSessionId}`)
                 .then(response => response.json())
                 .then(data => {
                     console.log('Progress check:', data);
@@ -643,6 +653,7 @@
             generateBtn.disabled = false;
             generateBtn.textContent = 'AI4컷 생성 시작';
             isProcessing = false;
+            currentSessionId = null;
 
             // 원본 이미지 업로드 영역 재활성화
             previewContainer.classList.remove('disabled');
