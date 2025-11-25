@@ -795,6 +795,12 @@
         // 이미지 표시 함수
         function displayImage(imageUrl, filename = 'ai_4_cut.png') {
             const container = document.getElementById('result-container');
+            const loading = document.getElementById('loading');
+            const placeholder = document.getElementById('result-placeholder');
+
+            // 로딩과 플레이스홀더 숨기기
+            if (loading) loading.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'none';
 
             container.innerHTML = `<img src="${imageUrl}" alt="AI4컷 결과" style="cursor: pointer;">`;
             container.classList.add('has-image');
