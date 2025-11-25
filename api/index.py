@@ -59,18 +59,21 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4'):
         layout_structure = "[narrow top margin] → [image 1] → [image 2] → [image 3] → [bottom section with logo, date, QR]."
         image_count_text = "3 images"
         aspect_ratio = "1:1 aspect ratio (square)"
+        frame_size = "1060x3187 pixels"
     elif layout == '2x2':
         layout_instruction = "IMPORTANT: 4 images arranged in 2x2 grid layout. Two images in first row, two images in second row."
         layout_structure = "[narrow top margin] → [Row 1: image 1 | image 2] → [Row 2: image 3 | image 4] → [bottom section with logo, date, QR]."
         image_count_text = "4 images"
         aspect_ratio = "3:4 aspect ratio (portrait orientation)"
+        frame_size = "2120x3187 pixels"
     else:  # 1x4 (default)
         layout_instruction = "IMPORTANT: 4 images arranged in SINGLE COLUMN vertically (1x4 layout). NOT 2x2, NOT 2x3, NOT 2x4. Only vertical single column layout."
         layout_structure = "[narrow top margin] → [image 1] → [image 2] → [image 3] → [image 4] → [bottom section with logo, date, QR]."
         image_count_text = "4 images"
         aspect_ratio = "4:3 aspect ratio"
+        frame_size = "1060x3187 pixels"
 
-    return f"""Create an AI-4-cut photo strip. Full frame size 1060x3187 pixels.
+    return f"""Create an AI-4-cut photo strip. Full frame size {frame_size}.
 {layout_instruction}
 {image_count_text}, each with {aspect_ratio} with different natural poses and expressions.
 All {frame_instruction} frame. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
