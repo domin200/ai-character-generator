@@ -315,15 +315,15 @@
     <div class="toast-container" id="toast-container"></div>
 
     <div class="container">
-        <h1>📸 AI4컷 생성기</h1>
+        <h1>AI4컷 생성기</h1>
 
         <div class="main-content">
             <div class="image-container">
                 <div class="image-box">
-                    <h3>📤 원본 이미지</h3>
+                    <h3>원본 이미지</h3>
                     <div class="image-display" id="preview-container">
                         <div class="upload-prompt">
-                            <div class="upload-icon">📁</div>
+                            <div class="upload-icon">+</div>
                             <div class="upload-text">클릭하여 이미지 선택</div>
                             <div class="upload-subtext">또는 이미지를 드래그하여 놓으세요</div>
                         </div>
@@ -331,7 +331,7 @@
                 </div>
 
                 <div class="image-box">
-                    <h3>✨ AI4컷 결과</h3>
+                    <h3>AI4컷 결과</h3>
                     <div class="image-display" id="result-container" title="클릭하여 다운로드">
                         <div class="placeholder-text" id="result-placeholder">
                             생성된 AI4컷이<br>여기에 표시됩니다
@@ -351,7 +351,7 @@
                 <input type="file" id="image" name="image" accept="image/*" required class="hidden-file-input">
 
                 <button type="submit" class="btn" id="generate-btn" disabled>
-                    🚀 AI4컷 생성 시작
+                    AI4컷 생성 시작
                 </button>
             </form>
         </div>
@@ -372,7 +372,7 @@
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
 
-            const icon = type === 'success' ? '✅' : '❌';
+            const icon = type === 'success' ? '●' : '●';
             toast.innerHTML = `
                 <span class="toast-icon">${icon}</span>
                 <span class="toast-message">${message}</span>
@@ -488,7 +488,7 @@
             resultContainer.onclick = null;
 
             generateBtn.disabled = true;
-            generateBtn.textContent = '⏳ 처리 중...';
+            generateBtn.textContent = '처리 중...';
 
             // AJAX로 이미지 생성 요청
             fetch('/generate', {
@@ -598,7 +598,7 @@
         // UI 초기화 함수
         function resetUI() {
             generateBtn.disabled = false;
-            generateBtn.textContent = '🚀 AI4컷 생성 시작';
+            generateBtn.textContent = 'AI4컷 생성 시작';
             isProcessing = false;
 
             // 원본 이미지 업로드 영역 재활성화
