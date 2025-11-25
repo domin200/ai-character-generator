@@ -430,6 +430,83 @@
                 height: 250px;
             }
         }
+
+        /* Image Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .image-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: zoomIn 0.3s ease;
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 30px;
+            right: 45px;
+            color: #ffffff;
+            font-size: 50px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10000;
+            line-height: 1;
+            opacity: 0.7;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+            transform: rotate(90deg);
+        }
+
+        @media (max-width: 768px) {
+            .modal-close {
+                top: 20px;
+                right: 25px;
+                font-size: 40px;
+            }
+
+            .modal-content {
+                max-width: 95%;
+                max-height: 85vh;
+            }
+        }
     </style>
 </head>
 <body>
@@ -480,7 +557,6 @@
 
         <!-- Gallery Section -->
         <div class="gallery-section">
-            <h2 class="gallery-title">생성 예시</h2>
             <div class="gallery-container">
                 <div class="gallery-item">
                     <img src="/static/pics/ai_4_cut (1).png" alt="AI4컷 예시 1">
@@ -502,6 +578,12 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="image-modal">
+        <span class="modal-close">&times;</span>
+        <img class="modal-content" id="modal-img">
     </div>
 
     <script>
@@ -763,6 +845,44 @@
             previewContainer.classList.remove('disabled');
             fileInput.disabled = false;
         }
+
+        // Gallery Image Modal
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-img');
+        const modalClose = document.querySelector('.modal-close');
+        const galleryItems = document.querySelectorAll('.gallery-item img');
+
+        // 갤러리 이미지 클릭 시 모달 열기
+        galleryItems.forEach(img => {
+            img.addEventListener('click', function() {
+                modal.classList.add('active');
+                modalImg.src = this.src;
+                document.body.style.overflow = 'hidden'; // 스크롤 비활성화
+            });
+        });
+
+        // 모달 닫기 함수
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = ''; // 스크롤 재활성화
+        }
+
+        // X 버튼 클릭 시 닫기
+        modalClose.addEventListener('click', closeModal);
+
+        // 모달 배경 클릭 시 닫기
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal || e.target === modalImg) {
+                closeModal();
+            }
+        });
+
+        // ESC 키로 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
