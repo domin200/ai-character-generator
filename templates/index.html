@@ -258,8 +258,8 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 12px;
-            min-height: 48px;
+            padding: 7px 12px;
+            box-sizing: border-box;
         }
 
         .color-picker-wrapper input[type="color"] {
@@ -646,7 +646,7 @@
 
                 <div class="selector-row">
                     <div class="selector-item">
-                        <label for="frame-color">프레임 색상</label>
+                        <label>프레임 색상</label>
                         <div class="color-picker-wrapper">
                             <input type="color" id="frame-color" name="frame_color" value="#000000">
                             <span class="color-code" id="color-code-display">#000000</span>
