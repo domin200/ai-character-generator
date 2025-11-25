@@ -47,7 +47,7 @@ def get_ai_4_cut_prompt():
     return f"""Create an AI-4-cut photo strip. Full frame size 1060x3187 pixels.
 4 images arranged vertically. Each image has 4:3 aspect ratio with different natural poses and expressions.
 All black frame. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
-At the bottom of the frame, add 'MIRAI logo.' and '{current_date}' in vertical center alignment.
+At the bottom of the frame, add 'MIRAI' (use logo.png) and '{current_date}' in vertical center alignment.
 Date should be 10% of logo size, small. Do not include 'AI4컷' text.
 QR code should be inserted small and naturally at the bottom right corner of the frame (to the right of the date),
 half the size of the logo, as small as possible while maintaining QR functionality."""
