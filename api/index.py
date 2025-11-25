@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__, template_folder='../templates')
-app.secret_key = 'life-4-cut-generator-secret-key-2024'
+app.secret_key = 'ai-4-cut-generator-secret-key-2024'
 
 # FAL AI API 키 설정 (환경변수에서 로드)
 FAL_KEY = os.getenv('FAL_KEY')
@@ -22,16 +22,16 @@ else:
 # 전역 상태 저장소
 app_state = {}
 
-# 인생네컷 생성 프롬프트 생성 함수 (날짜 동적 생성)
-def get_life_4_cut_prompt():
+# AI4컷 생성 프롬프트 생성 함수 (날짜 동적 생성)
+def get_ai_4_cut_prompt():
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
-    return f"""Create a life-4-cut photo strip. Full frame size 1060x3187 pixels.
+    return f"""Create an AI-4-cut photo strip. Full frame size 1060x3187 pixels.
 4 images arranged vertically. Each image has 4:3 aspect ratio with different natural poses and expressions.
 All black frame. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
 At the bottom of the frame, add 'MIRAI logo.' and '{current_date}' in vertical center alignment.
-Date should be 10% of logo size, small. Do not include '인생네컷' text.
+Date should be 10% of logo size, small. Do not include 'AI4컷' text.
 QR code should be inserted small and naturally at the bottom right corner of the frame (to the right of the date),
 half the size of the logo, as small as possible while maintaining QR functionality."""
 
@@ -45,7 +45,7 @@ def check_progress():
     result = {
         'result_ready': app_state.get('result_ready', False),
         'result_url': app_state.get('result_url'),
-        'result_filename': app_state.get('result_filename', 'life_4_cut.png'),
+        'result_filename': app_state.get('result_filename', 'ai_4_cut.png'),
         'processing_started': app_state.get('processing_started', False),
         'processing_timestamp': app_state.get('processing_timestamp'),
         'current_image_hash': app_state.get('current_image_hash'),
@@ -91,11 +91,11 @@ def generate_image():
         app_state['current_image_hash'] = data_hash
         app_state['current_processing_id'] = unique_id
 
-        # FAL AI로 인생네컷 생성
+        # FAL AI로 AI4컷 생성
         print("Processing with FAL AI nano-banana-pro/edit...")
-        process_fal_life_4_cut(image_data)
+        process_fal_ai_4_cut(image_data)
 
-        return jsonify({'success': True, 'message': '인생네컷 생성을 시작했습니다!'})
+        return jsonify({'success': True, 'message': 'AI4컷 생성을 시작했습니다!'})
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -103,10 +103,10 @@ def generate_image():
         traceback.print_exc()
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
-def process_fal_life_4_cut(image_data):
-    """FAL AI nano-banana-pro/edit로 인생네컷 생성"""
+def process_fal_ai_4_cut(image_data):
+    """FAL AI nano-banana-pro/edit로 AI4컷 생성"""
     try:
-        print("=== FAL AI LIFE-4-CUT GENERATION ===")
+        print("=== FAL AI AI-4-CUT GENERATION ===")
 
         # 1. 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -139,7 +139,7 @@ def process_fal_life_4_cut(image_data):
         handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
-                "prompt": get_life_4_cut_prompt(),
+                "prompt": get_ai_4_cut_prompt(),
                 "image_urls": [user_image_uri, logo_uri, qr_uri]
             }
         )
@@ -169,7 +169,7 @@ def process_fal_life_4_cut(image_data):
                 result_url = result_data['url']
 
             if result_url:
-                print(f"Life-4-cut generated: {result_url}")
+                print(f"AI-4-cut generated: {result_url}")
 
                 # URL을 base64로 변환하여 저장
                 import requests
@@ -179,10 +179,10 @@ def process_fal_life_4_cut(image_data):
                     data_uri_result = f"data:image/png;base64,{result_base64}"
 
                     app_state['result_url'] = data_uri_result
-                    app_state['result_filename'] = 'life_4_cut.png'
+                    app_state['result_filename'] = 'ai_4_cut.png'
                     app_state['result_ready'] = True
 
-                    print("✅ Life-4-cut generation completed successfully")
+                    print("✅ AI-4-cut generation completed successfully")
                 else:
                     raise Exception(f"Failed to download result image: {response.status_code}")
             else:
