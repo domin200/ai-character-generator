@@ -4,6 +4,7 @@ import time
 import fal_client
 import os
 from dotenv import load_dotenv
+import threading
 
 # .env 파일 로드
 load_dotenv()
@@ -160,9 +161,14 @@ def generate_image():
 
         print(f"=== STARTING LIFE-4-CUT GENERATION for {unique_id} ===")
 
-        # FAL AI로 AI4컷 생성
-        print("Processing with FAL AI nano-banana-pro/edit...")
-        process_fal_ai_4_cut(image_data, unique_id)
+        # FAL AI로 AI4컷 생성 (백그라운드 스레드에서 실행)
+        print("Processing with FAL AI nano-banana-pro/edit in background thread...")
+        thread = threading.Thread(
+            target=process_fal_ai_4_cut,
+            args=(image_data, unique_id),
+            daemon=True
+        )
+        thread.start()
 
         return jsonify({
             'success': True,
@@ -272,7 +278,7 @@ def process_fal_ai_4_cut(image_data, unique_id):
         user_state['result_ready'] = False
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    app.run(debug=True, port=5002, threaded=True)
 
 # Vercel 배포를 위한 앱 객체 노출
 application = app
