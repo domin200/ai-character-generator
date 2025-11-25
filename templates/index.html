@@ -601,6 +601,8 @@
         // 진행 상태 추적
         let isProcessing = false;
         let currentSessionId = null;
+        let progressCheckCount = 0;
+        const MAX_PROGRESS_CHECKS = 150; // 5분 (150 * 2초)
 
         // Toast notification function
         function showToast(message, type = 'success') {
@@ -738,10 +740,11 @@
                 if (data.success && data.id) {
                     // 세션 ID 저장
                     currentSessionId = data.id;
-                    console.log('Session ID:', currentSessionId);
+                    progressCheckCount = 0; // 카운터 초기화
+                    console.log('[Generate] Session ID:', currentSessionId);
 
                     // 진행상황 확인 시작
-                    console.log('Starting progress check...');
+                    console.log('[Generate] Starting progress check...');
                     checkProgress();
                 } else if (data.error) {
                     showToast(data.error, 'error');
@@ -758,52 +761,98 @@
         // 진행 상황 확인 함수
         function checkProgress() {
             if (!currentSessionId) {
-                console.error('No session ID available');
-                resetUI();
+                console.error('[Progress] No session ID available');
+                hideLoadingAndReset();
                 return;
             }
+
+            // 타임아웃 체크
+            progressCheckCount++;
+            if (progressCheckCount > MAX_PROGRESS_CHECKS) {
+                console.error('[Progress] Timeout: Maximum check attempts reached');
+                showToast('처리 시간이 초과되었습니다. 다시 시도해주세요.', 'error');
+                hideLoadingAndReset();
+                return;
+            }
+
+            console.log(`[Progress] Check #${progressCheckCount} for session ${currentSessionId}`);
+
             fetch(`/api/check_progress?id=${currentSessionId}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    console.log('Progress check:', data);
+                    console.log('[Progress] Response:', data);
 
                     // 오류 확인
                     if (data.error) {
-                        console.error('Error from server:', data.error);
+                        console.error('[Progress] Server error:', data.error);
                         showToast(data.error, 'error');
-                        resetUI();
+                        hideLoadingAndReset();
                         return;
                     }
 
                     // 결과 완료 확인
                     if (data.result_ready && data.result_url) {
+                        console.log('[Progress] ✅ Result ready! Displaying image...');
                         displayImage(data.result_url, data.result_filename);
                         showToast('AI4컷이 성공적으로 생성되었습니다!', 'success');
-                        resetUI();
+                        hideLoadingAndReset();
                     } else {
                         // 아직 처리 중이면 2초 후 다시 확인
+                        console.log('[Progress] Still processing, will check again in 2s...');
                         setTimeout(checkProgress, 2000);
                     }
                 })
                 .catch(error => {
-                    console.error('Progress check failed:', error);
-                    // 오류 발생시에도 재시도
-                    setTimeout(checkProgress, 2000);
+                    console.error('[Progress] Fetch error:', error);
+
+                    // 네트워크 오류는 몇 번 더 재시도
+                    if (progressCheckCount < MAX_PROGRESS_CHECKS) {
+                        console.log('[Progress] Retrying in 2s...');
+                        setTimeout(checkProgress, 2000);
+                    } else {
+                        showToast('네트워크 오류가 발생했습니다. 다시 시도해주세요.', 'error');
+                        hideLoadingAndReset();
+                    }
                 });
+        }
+
+        // 로딩 숨기고 UI 리셋
+        function hideLoadingAndReset() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.display = 'none';
+                console.log('[UI] Loading hidden');
+            }
+            resetUI();
         }
 
         // 이미지 표시 함수
         function displayImage(imageUrl, filename = 'ai_4_cut.png') {
+            console.log('[Display] Showing result image...');
+
             const container = document.getElementById('result-container');
             const loading = document.getElementById('loading');
             const placeholder = document.getElementById('result-placeholder');
 
             // 로딩과 플레이스홀더 숨기기
-            if (loading) loading.style.display = 'none';
-            if (placeholder) placeholder.style.display = 'none';
+            if (loading) {
+                loading.style.display = 'none';
+                console.log('[Display] Loading spinner hidden');
+            }
+            if (placeholder) {
+                placeholder.style.display = 'none';
+                console.log('[Display] Placeholder hidden');
+            }
 
+            // 이미지 표시
             container.innerHTML = `<img src="${imageUrl}" alt="AI4컷 결과" style="cursor: pointer;">`;
             container.classList.add('has-image');
+            console.log('[Display] ✅ Image displayed successfully');
 
             // 클릭 이벤트 추가
             container.onclick = function() {
