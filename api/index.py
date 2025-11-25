@@ -54,8 +54,10 @@ def get_ai_4_cut_prompt(frame_color='black'):
     frame_instruction = color_map.get(frame_color, 'black')
 
     return f"""Create an AI-4-cut photo strip. Full frame size 1060x3187 pixels.
-4 images arranged vertically. Each image has 4:3 aspect ratio with different natural poses and expressions.
+IMPORTANT: 4 images arranged in SINGLE COLUMN vertically (1x4 layout). NOT 2x2, NOT 2x3, NOT 2x4. Only vertical single column layout.
+Each image has 4:3 aspect ratio with different natural poses and expressions.
 All {frame_instruction} frame. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
+Layout structure: [narrow top margin] → [image 1] → [image 2] → [image 3] → [image 4] → [bottom section with logo, date, QR].
 At the bottom of the frame, add 'MIRAI' (use logo.png) and '{current_date}' in vertical center alignment.
 Date should be 10% of logo size, small. Do not include 'AI4컷' text.
 QR code should be inserted small and naturally at the bottom right corner of the frame (to the right of the date),
