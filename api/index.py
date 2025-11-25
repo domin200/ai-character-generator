@@ -45,13 +45,18 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4'):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
-    # 프레임 색상 매핑
-    color_map = {
-        'black': 'black',
-        'gray': 'gray',
-        'white': 'white'
-    }
-    frame_instruction = color_map.get(frame_color, 'black')
+    # 프레임 색상 (hex 코드 또는 기본 색상 이름)
+    if frame_color.startswith('#'):
+        # Hex 코드인 경우 그대로 사용
+        frame_instruction = f"color {frame_color}"
+    else:
+        # 기존 호환성을 위한 색상 이름 매핑
+        color_map = {
+            'black': 'color #000000',
+            'gray': 'color #808080',
+            'white': 'color #FFFFFF'
+        }
+        frame_instruction = color_map.get(frame_color, 'color #000000')
 
     # 레이아웃별 프롬프트 생성
     if layout == '1x3':
