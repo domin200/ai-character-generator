@@ -39,10 +39,30 @@
         }
 
         .image-container {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 30px;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .image-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 0 10px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
         }
 
         .image-box {

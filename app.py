@@ -2,13 +2,21 @@ from flask import Flask, render_template, request, jsonify
 import base64
 import time
 import fal_client
+import os
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'life-4-cut-generator-secret-key-2024'
 
-# FAL AI API 키 설정 (환경변수 사용)
-import os
-os.environ['FAL_KEY'] = "3d0bf45f-f7de-4be5-b85b-e9522bf4901e:9461d2b0cccf9798e447725d2bf54027"
+# FAL AI API 키 설정 (환경변수에서 로드)
+FAL_KEY = os.getenv('FAL_KEY')
+if FAL_KEY:
+    os.environ['FAL_KEY'] = FAL_KEY
+else:
+    raise ValueError("FAL_KEY environment variable is not set. Please check your .env file.")
 
 # 전역 상태 저장소
 app_state = {}
@@ -152,21 +160,21 @@ def process_fal_life_4_cut(image_data):
         print(f"Calling FAL AI with 3 images (user + logo + QR) and prompt...")
 
         # FAL AI nano-banana-pro/edit 호출 (3개 이미지 입력)
-        result = fal_client.subscribe(
+        handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
                 "prompt": LIFE_4_CUT_PROMPT,
                 "image_urls": [user_image_uri, logo_uri, qr_uri]
-            },
-            with_logs=True,
-            on_queue_update=lambda update: print(f"Queue status: {update.get('status', 'unknown')}")
+            }
         )
 
-        print(f"FAL AI response received")
+        print(f"Waiting for FAL AI response...")
+        result = handler.get()
+        print(f"FAL AI response received: {result}")
 
         # 결과 처리
-        if result and 'data' in result:
-            result_data = result['data']
+        if result:
+            result_data = result
 
             # 이미지 URL 추출 (FAL AI는 여러 형식으로 반환 가능)
             result_url = None

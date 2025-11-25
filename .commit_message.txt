@@ -1,1 +1,1 @@
-✨ FAL AI nano-banana-pro/edit로 인생네컷 생성기로 전환 (3개 이미지 입력)
+✨ FAL AI 인생네컷 생성기 완성: .env 키관리, 가로배치, 모바일 반응형
