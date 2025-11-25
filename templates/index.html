@@ -351,6 +351,85 @@
             flex: 1;
             font-weight: 500;
         }
+
+        /* Gallery Styles */
+        .gallery-section {
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gallery-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #ffffff;
+            opacity: 0.9;
+        }
+
+        .gallery-container {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .gallery-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .gallery-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .gallery-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .gallery-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .gallery-item {
+            flex-shrink: 0;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .gallery-item img {
+            height: 100%;
+            width: auto;
+            display: block;
+            object-fit: cover;
+        }
+
+        @media (max-width: 768px) {
+            .gallery-section {
+                margin-top: 40px;
+            }
+
+            .gallery-title {
+                font-size: 20px;
+            }
+
+            .gallery-item {
+                height: 250px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -397,6 +476,31 @@
                     AI4컷 생성 시작
                 </button>
             </form>
+        </div>
+
+        <!-- Gallery Section -->
+        <div class="gallery-section">
+            <h2 class="gallery-title">생성 예시</h2>
+            <div class="gallery-container">
+                <div class="gallery-item">
+                    <img src="/static/pics/ai_4_cut (1).png" alt="AI4컷 예시 1">
+                </div>
+                <div class="gallery-item">
+                    <img src="/static/pics/ai_4_cut (5).png" alt="AI4컷 예시 2">
+                </div>
+                <div class="gallery-item">
+                    <img src="/static/pics/ai_4_cut (7).png" alt="AI4컷 예시 3">
+                </div>
+                <div class="gallery-item">
+                    <img src="/static/pics/ai_4_cut (8).png" alt="AI4컷 예시 4">
+                </div>
+                <div class="gallery-item">
+                    <img src="/static/pics/ai_4_cut (9).png" alt="AI4컷 예시 5">
+                </div>
+                <div class="gallery-item">
+                    <img src="/static/pics/life_4_cut (2).png" alt="AI4컷 예시 6">
+                </div>
+            </div>
         </div>
     </div>
 
