@@ -39,14 +39,22 @@ def clean_old_states():
     for uid in to_delete:
         del app_state[uid]
 
-# AI4컷 생성 프롬프트 생성 함수 (날짜 동적 생성)
-def get_ai_4_cut_prompt():
+# AI4컷 생성 프롬프트 생성 함수 (날짜 및 프레임 색상 동적 생성)
+def get_ai_4_cut_prompt(frame_color='black'):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
+    # 프레임 색상 매핑
+    color_map = {
+        'black': 'black',
+        'gray': 'gray',
+        'white': 'white'
+    }
+    frame_instruction = color_map.get(frame_color, 'black')
+
     return f"""Create an AI-4-cut photo strip. Full frame size 1060x3187 pixels.
 4 images arranged vertically. Each image has 4:3 aspect ratio with different natural poses and expressions.
-All black frame. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
+All {frame_instruction} frame. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
 At the bottom of the frame, add 'MIRAI' (use logo.png) and '{current_date}' in vertical center alignment.
 Date should be 10% of logo size, small. Do not include 'AI4컷' text.
 QR code should be inserted small and naturally at the bottom right corner of the frame (to the right of the date),
@@ -142,6 +150,10 @@ def generate_image():
 
         print(f"Image size: {len(image_data)} bytes, filename: {uploaded_file.filename}")
 
+        # 프레임 색상 가져오기
+        frame_color = request.form.get('frame_color', 'black')
+        print(f"Frame color: {frame_color}")
+
         # 고유 해시 생성
         import hashlib
         data_hash = hashlib.sha256(image_data).hexdigest()[:12]
@@ -165,7 +177,7 @@ def generate_image():
         print("Processing with FAL AI nano-banana-pro/edit in background thread...")
         thread = threading.Thread(
             target=process_fal_ai_4_cut,
-            args=(image_data, unique_id),
+            args=(image_data, unique_id, frame_color),
             daemon=True
         )
         thread.start()
@@ -182,11 +194,11 @@ def generate_image():
         traceback.print_exc()
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
-def process_fal_ai_4_cut(image_data, unique_id):
+def process_fal_ai_4_cut(image_data, unique_id, frame_color='black'):
     """FAL AI nano-banana-pro/edit로 AI4컷 생성"""
     try:
         user_state = get_user_state(unique_id)
-        print(f"=== FAL AI AI-4-CUT GENERATION for {unique_id} ===")
+        print(f"=== FAL AI AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}) ===")
 
         # 1. 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -219,7 +231,7 @@ def process_fal_ai_4_cut(image_data, unique_id):
         handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
-                "prompt": get_ai_4_cut_prompt(),
+                "prompt": get_ai_4_cut_prompt(frame_color),
                 "image_urls": [user_image_uri, logo_uri, qr_uri]
             }
         )
