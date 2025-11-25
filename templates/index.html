@@ -234,7 +234,8 @@
             opacity: 0.9;
         }
 
-        .selector-item select {
+        .selector-item select,
+        .selector-item input[type="color"] {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
@@ -243,6 +244,9 @@
             font-size: 0.9375rem;
             cursor: pointer;
             transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .selector-item select {
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
@@ -250,15 +254,34 @@
             padding-right: 36px;
         }
 
-        .selector-item select:hover {
+        .selector-item input[type="color"] {
+            height: 48px;
+            padding: 4px;
+        }
+
+        .selector-item input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .selector-item input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .selector-item select:hover,
+        .selector-item input[type="color"]:hover {
             background-color: rgba(255, 255, 255, 0.08);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .selector-item select:focus {
+        .selector-item select:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        .selector-item select:focus,
+        .selector-item input[type="color"]:focus {
             outline: none;
             border-color: #007AFF;
             box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
@@ -602,11 +625,7 @@
                 <div class="selector-row">
                     <div class="selector-item">
                         <label for="frame-color">프레임 색상</label>
-                        <select id="frame-color" name="frame_color">
-                            <option value="black" selected>검정</option>
-                            <option value="gray">회색</option>
-                            <option value="white">흰색</option>
-                        </select>
+                        <input type="color" id="frame-color" name="frame_color" value="#000000">
                     </div>
                     <div class="selector-item">
                         <label for="layout">레이아웃</label>
