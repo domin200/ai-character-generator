@@ -72,22 +72,22 @@
             padding: 16px;
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .image-box h3 {
             color: #ffffff;
             margin-bottom: 12px;
-            font-size: 0.875rem;
+            font-size: 0.9375rem;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.7;
+            letter-spacing: 0.3px;
+            opacity: 0.9;
         }
 
         .image-display {
             flex: 1;
-            background: #1c1c1e;
-            border: 1.5px dashed rgba(255, 255, 255, 0.2);
+            background: #2c2c2e;
+            border: 1.5px dashed rgba(255, 255, 255, 0.25);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -134,36 +134,37 @@
         }
 
         .placeholder-text {
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.5);
             text-align: center;
             padding: 20px;
             pointer-events: none;
-            font-size: 0.875rem;
+            font-size: 0.9375rem;
         }
 
         .upload-prompt {
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.7);
             pointer-events: none;
         }
 
         .upload-icon {
-            font-size: 40px;
+            font-size: 48px;
             margin-bottom: 12px;
-            opacity: 0.6;
+            opacity: 0.8;
         }
 
         .upload-text {
-            font-size: 0.875rem;
+            font-size: 0.9375rem;
             margin-bottom: 6px;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
         }
 
         .upload-subtext {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .hidden-file-input {
@@ -205,7 +206,7 @@
             padding: 20px;
             flex-direction: column;
             align-items: center;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 255, 255, 0.85);
         }
 
         .loading.active {
@@ -213,11 +214,11 @@
         }
 
         .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.2);
             border-top: 3px solid #007AFF;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             animation: spin 0.8s linear infinite;
             margin: 0 auto 16px;
         }
@@ -228,14 +229,14 @@
         }
 
         .loading p {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.9375rem;
             font-weight: 500;
         }
 
         .loading small {
-            color: rgba(255, 255, 255, 0.4) !important;
-            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.55) !important;
+            font-size: 0.8125rem;
         }
 
         /* Toast Notification Styles */
@@ -338,7 +339,7 @@
                         <div class="loading" id="loading">
                             <div class="spinner"></div>
                             <p id="loading-text">AI4컷 생성 중...</p>
-                            <small style="color: #999; margin-top: 10px; display: block;">
+                            <small style="margin-top: 10px; display: block;">
                                 약 30초 정도 소요됩니다
                             </small>
                         </div>
@@ -478,7 +479,7 @@
                 <div class="loading active">
                     <div class="spinner"></div>
                     <p>AI4컷 생성 중...</p>
-                    <small style="color: #999; margin-top: 10px;">
+                    <small style="margin-top: 10px;">
                         약 30초 정도 소요됩니다
                     </small>
                 </div>
