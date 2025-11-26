@@ -500,7 +500,6 @@
             container.innerHTML = imageUrls.map((url, index) => `
                 <div class="image-item ${index === 0 ? 'selected' : ''}" data-index="${index}" onclick="selectImage(${index})">
                     <img src="${url}" alt="AI4컷 결과 ${index + 1}">
-                    <div class="image-label">${index + 1}번</div>
                 </div>
             `).join('');
 
