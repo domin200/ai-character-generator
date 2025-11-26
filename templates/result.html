@@ -27,7 +27,7 @@
         }
 
         .container {
-            max-width: 600px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
@@ -76,6 +76,44 @@
             text-align: center;
         }
 
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .image-item {
+            background: #2c2c2e;
+            border-radius: 8px;
+            padding: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .image-item:hover {
+            border-color: rgba(0, 122, 255, 0.5);
+        }
+
+        .image-item.selected {
+            border-color: #007AFF;
+            box-shadow: 0 0 12px rgba(0, 122, 255, 0.4);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .image-label {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
         .image-display {
             background: #2c2c2e;
             border-radius: 8px;
@@ -92,6 +130,12 @@
             max-height: 70vh;
             object-fit: contain;
             border-radius: 4px;
+        }
+
+        @media (max-width: 600px) {
+            .images-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .loading {
@@ -183,15 +227,16 @@
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #30D889 0%, #38f9d7 100%);
+            background: #34C759;
             color: white;
         }
 
         .btn-success:hover {
-            opacity: 0.9;
+            background: #2DB84D;
         }
 
         .btn-success:active {
+            background: #28A745;
             transform: scale(0.98);
         }
 
@@ -304,12 +349,14 @@
 
         <div class="main-content">
             <div class="result-image-container">
-                <h3>AI4컷 결과</h3>
-                <div class="image-display" id="result-container">
-                    <div class="loading" id="loading">
-                        <div class="spinner"></div>
-                        <p>AI4컷 생성 중...</p>
-                        <small>약 1분 정도 소요됩니다</small>
+                <h3>AI4컷 결과 <small style="font-weight: 400; opacity: 0.7;">(다운로드할 이미지를 선택하세요)</small></h3>
+                <div class="images-grid" id="result-container">
+                    <div class="image-display">
+                        <div class="loading" id="loading">
+                            <div class="spinner"></div>
+                            <p>AI4컷 생성 중...</p>
+                            <small>약 1분 정도 소요됩니다</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -336,7 +383,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('id');
 
-        let resultImageUrl = null;
+        let resultImageUrls = [];
+        let selectedImageIndex = 0;
         let resultFilename = 'ai_4_cut.png';
         let progressCheckCount = 0;
         const MAX_PROGRESS_CHECKS = 150; // 5분 (150 * 2초)
@@ -409,12 +457,12 @@
                     }
 
                     // 결과 완료 확인
-                    if (data.result_ready && data.result_url) {
-                        console.log('[Progress] Result ready! Displaying image...');
-                        resultImageUrl = data.result_url;
+                    if (data.result_ready && (data.result_urls || data.result_url)) {
+                        console.log('[Progress] Result ready! Displaying images...');
+                        resultImageUrls = data.result_urls || [data.result_url];
                         resultFilename = data.result_filename || 'ai_4_cut.png';
-                        displayResult(data.result_url);
-                        showToast('AI4컷이 성공적으로 생성되었습니다!', 'success');
+                        displayResults(resultImageUrls);
+                        showToast(`AI4컷이 성공적으로 생성되었습니다! (${resultImageUrls.length}장)`, 'success');
                     } else {
                         // 아직 처리 중이면 2초 후 다시 확인
                         console.log('[Progress] Still processing, will check again in 2s...');
@@ -437,66 +485,86 @@
                 });
         }
 
-        // 결과 표시 함수
-        function displayResult(imageUrl) {
+        // 결과 표시 함수 (여러 이미지)
+        function displayResults(imageUrls) {
             const container = document.getElementById('result-container');
             const buttonGroup = document.getElementById('button-group');
 
-            container.innerHTML = `<img src="${imageUrl}" alt="AI4컷 결과">`;
+            container.innerHTML = imageUrls.map((url, index) => `
+                <div class="image-item ${index === 0 ? 'selected' : ''}" data-index="${index}" onclick="selectImage(${index})">
+                    <img src="${url}" alt="AI4컷 결과 ${index + 1}">
+                    <div class="image-label">${index + 1}번</div>
+                </div>
+            `).join('');
+
             buttonGroup.style.display = 'flex';
+        }
+
+        // 이미지 선택 함수
+        function selectImage(index) {
+            selectedImageIndex = index;
+
+            // 선택 상태 업데이트
+            document.querySelectorAll('.image-item').forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
         }
 
         // 다운로드 버튼
         document.getElementById('download-btn').addEventListener('click', function() {
-            if (!resultImageUrl) return;
+            if (resultImageUrls.length === 0) return;
 
-            if (resultImageUrl.startsWith('data:')) {
+            const imageUrl = resultImageUrls[selectedImageIndex];
+            const filename = `ai_4_cut_${selectedImageIndex + 1}.png`;
+
+            if (imageUrl.startsWith('data:')) {
                 const a = document.createElement('a');
-                a.href = resultImageUrl;
-                a.download = resultFilename;
+                a.href = imageUrl;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                showToast('이미지를 다운로드했습니다!', 'success');
+                showToast(`${selectedImageIndex + 1}번 이미지를 다운로드했습니다!`, 'success');
             } else {
-                fetch(resultImageUrl)
+                fetch(imageUrl)
                     .then(response => response.blob())
                     .then(blob => {
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = resultFilename;
+                        a.download = filename;
                         document.body.appendChild(a);
                         a.click();
                         window.URL.revokeObjectURL(url);
                         document.body.removeChild(a);
-                        showToast('이미지를 다운로드했습니다!', 'success');
+                        showToast(`${selectedImageIndex + 1}번 이미지를 다운로드했습니다!`, 'success');
                     })
                     .catch(error => {
                         console.error('Download failed:', error);
-                        window.open(resultImageUrl, '_blank');
+                        window.open(imageUrl, '_blank');
                     });
             }
         });
 
         // 공유하기 버튼
         document.getElementById('share-btn').addEventListener('click', async function() {
-            if (!resultImageUrl) return;
+            if (resultImageUrls.length === 0) return;
+
+            const imageUrl = resultImageUrls[selectedImageIndex];
+            const filename = `ai_4_cut_${selectedImageIndex + 1}.png`;
 
             // Web Share API 지원 확인
             if (navigator.share && navigator.canShare) {
                 try {
                     // base64를 Blob으로 변환
-                    let blob;
-                    if (resultImageUrl.startsWith('data:')) {
-                        const response = await fetch(resultImageUrl);
-                        blob = await response.blob();
-                    } else {
-                        const response = await fetch(resultImageUrl);
-                        blob = await response.blob();
-                    }
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
 
-                    const file = new File([blob], resultFilename, { type: 'image/png' });
+                    const file = new File([blob], filename, { type: 'image/png' });
 
                     if (navigator.canShare({ files: [file] })) {
                         await navigator.share({

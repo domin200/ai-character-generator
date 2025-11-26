@@ -226,12 +226,13 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
 
         print(f"Calling FAL AI with 3 images (user + logo + QR) and prompt...")
 
-        # FAL AI nano-banana-pro/edit 호출 (3개 이미지 입력)
+        # FAL AI nano-banana-pro/edit 호출 (3개 이미지 입력, 2장 생성)
         handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
                 "prompt": get_ai_4_cut_prompt(frame_color, layout),
-                "image_urls": [user_image_uri, logo_uri, qr_uri]
+                "image_urls": [user_image_uri, logo_uri, qr_uri],
+                "num_images": 2
             }
         )
 

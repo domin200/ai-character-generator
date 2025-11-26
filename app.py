@@ -120,6 +120,7 @@ def check_progress():
     result = {
         'result_ready': user_state.get('result_ready', False),
         'result_url': user_state.get('result_url'),
+        'result_urls': user_state.get('result_urls', []),
         'result_filename': user_state.get('result_filename', 'ai_4_cut.png'),
         'processing_started': user_state.get('processing_started', False),
         'processing_timestamp': user_state.get('processing_timestamp'),
@@ -262,12 +263,13 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
 
         print(f"Calling FAL AI with 3 images (user + logo + QR) and prompt...")
 
-        # FAL AI nano-banana-pro/edit 호출 (3개 이미지 입력)
+        # FAL AI nano-banana-pro/edit 호출 (3개 이미지 입력, 2장 생성)
         handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
                 "prompt": get_ai_4_cut_prompt(frame_color, layout),
-                "image_urls": [user_image_uri, logo_uri, qr_uri]
+                "image_urls": [user_image_uri, logo_uri, qr_uri],
+                "num_images": 2
             }
         )
 
@@ -280,38 +282,47 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
             result_data = result
 
             # 이미지 URL 추출 (FAL AI는 여러 형식으로 반환 가능)
-            result_url = None
+            result_urls = []
 
-            if 'image' in result_data:
+            if 'images' in result_data and len(result_data['images']) > 0:
+                for img in result_data['images']:
+                    if isinstance(img, dict) and 'url' in img:
+                        result_urls.append(img['url'])
+                    elif isinstance(img, str):
+                        result_urls.append(img)
+            elif 'image' in result_data:
                 if isinstance(result_data['image'], dict) and 'url' in result_data['image']:
-                    result_url = result_data['image']['url']
+                    result_urls.append(result_data['image']['url'])
                 elif isinstance(result_data['image'], str):
-                    result_url = result_data['image']
-            elif 'images' in result_data and len(result_data['images']) > 0:
-                if isinstance(result_data['images'][0], dict) and 'url' in result_data['images'][0]:
-                    result_url = result_data['images'][0]['url']
-                elif isinstance(result_data['images'][0], str):
-                    result_url = result_data['images'][0]
+                    result_urls.append(result_data['image'])
             elif 'url' in result_data:
-                result_url = result_data['url']
+                result_urls.append(result_data['url'])
 
-            if result_url:
-                print(f"AI-4-cut generated: {result_url}")
+            if result_urls:
+                print(f"AI-4-cut generated: {len(result_urls)} images")
 
-                # URL을 base64로 변환하여 저장
+                # 모든 이미지를 base64로 변환하여 저장
                 import requests
-                response = requests.get(result_url)
-                if response.status_code == 200:
-                    result_base64 = base64.b64encode(response.content).decode('utf-8')
-                    data_uri_result = f"data:image/png;base64,{result_base64}"
+                result_data_uris = []
+                for i, url in enumerate(result_urls):
+                    response = requests.get(url)
+                    if response.status_code == 200:
+                        result_base64 = base64.b64encode(response.content).decode('utf-8')
+                        data_uri_result = f"data:image/png;base64,{result_base64}"
+                        result_data_uris.append(data_uri_result)
+                        print(f"Image {i+1} downloaded successfully")
+                    else:
+                        print(f"Failed to download image {i+1}: {response.status_code}")
 
-                    user_state['result_url'] = data_uri_result
+                if result_data_uris:
+                    user_state['result_urls'] = result_data_uris
+                    user_state['result_url'] = result_data_uris[0]  # 호환성을 위해 첫번째 이미지
                     user_state['result_filename'] = 'ai_4_cut.png'
                     user_state['result_ready'] = True
 
-                    print(f"✅ AI-4-cut generation completed successfully for {unique_id}")
+                    print(f"✅ AI-4-cut generation completed successfully for {unique_id} ({len(result_data_uris)} images)")
                 else:
-                    raise Exception(f"Failed to download result image: {response.status_code}")
+                    raise Exception("Failed to download any result images")
             else:
                 raise Exception("No image URL in FAL AI response")
         else:
