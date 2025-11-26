@@ -1,1 +1,1 @@
-✨ 2인 4컷 기능 + 컬러/흑백 선택 옵션 추가
+🔗 canonical URL을 ai4cut.mirai.fun으로 변경
