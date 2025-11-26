@@ -85,27 +85,26 @@
 
         .upload-section {
             margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
         }
 
-        .upload-section h3 {
-            color: #ffffff;
-            margin-bottom: 12px;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            opacity: 0.9;
+        .upload-section .image-display {
+            flex: 1;
+            min-height: 200px;
         }
 
         .uploaded-images {
             display: flex;
             gap: 12px;
-            margin-top: 16px;
-            flex-wrap: wrap;
+            flex-shrink: 0;
         }
 
         .uploaded-image-item {
             position: relative;
-            width: 120px;
-            height: 120px;
+            width: 150px;
+            height: 200px;
             border-radius: 8px;
             overflow: hidden;
             background: #3c3c3e;
@@ -119,15 +118,15 @@
 
         .remove-image-btn {
             position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 24px;
-            height: 24px;
+            top: 6px;
+            right: 6px;
+            width: 28px;
+            height: 28px;
             background: rgba(255, 59, 48, 0.9);
             color: white;
             border: none;
             border-radius: 50%;
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1;
             cursor: pointer;
             display: flex;
@@ -140,10 +139,19 @@
             background: #ff3b30;
         }
 
-        .upload-hint {
-            font-size: 0.8125rem;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 8px;
+        @media (max-width: 600px) {
+            .upload-section {
+                flex-direction: column;
+            }
+
+            .uploaded-images {
+                justify-content: center;
+            }
+
+            .uploaded-image-item {
+                width: 120px;
+                height: 160px;
+            }
         }
 
         /* 모바일 반응형 */
@@ -611,14 +619,14 @@
 
         <div class="main-content">
             <div class="upload-section">
+                <div class="uploaded-images" id="uploaded-images"></div>
                 <div class="image-display" id="preview-container">
                     <div class="upload-prompt">
                         <div class="upload-icon">+</div>
                         <div class="upload-text">이미지 업로드</div>
-                        <div class="upload-subtext">최대 2장 (2인 4컷 가능)</div>
+                        <div class="upload-subtext">최대 2장</div>
                     </div>
                 </div>
-                <div class="uploaded-images" id="uploaded-images"></div>
             </div>
 
             <form action="/generate" method="post" enctype="multipart/form-data" id="upload-form">
