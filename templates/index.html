@@ -30,6 +30,15 @@
     <meta name="twitter:description" content="사진 한 장으로 멋진 인생 4컷 사진을 만들어보세요. MIRAI의 AI 기술로 간편하고 빠르게!">
     <meta name="twitter:image" content="https://ai4cut.mirai.fun/og-image.png">
 
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LCXXTW7X3Z"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-LCXXTW7X3Z');
+    </script>
+
     <!-- Additional Meta Tags -->
     <meta name="theme-color" content="#1c1c1e">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -883,6 +892,15 @@
 
             if (isProcessing || uploadedImages.length === 0) return;
             isProcessing = true;
+
+            // GA4 이벤트 전송 - 생성 버튼 클릭
+            gtag('event', 'generate_click', {
+                'event_category': 'engagement',
+                'event_label': 'AI4컷 생성',
+                'image_count': uploadedImages.length,
+                'layout': document.getElementById('layout').value,
+                'color_mode': document.getElementById('color-mode').value
+            });
 
             const formData = new FormData(uploadForm);
 
