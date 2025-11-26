@@ -30,14 +30,13 @@
     <meta name="twitter:description" content="사진 한 장으로 멋진 인생 4컷 사진을 만들어보세요. MIRAI의 AI 기술로 간편하고 빠르게!">
     <meta name="twitter:image" content="https://ai4cut.mirai.fun/og-image.png">
 
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LCXXTW7X3Z"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-LCXXTW7X3Z');
-    </script>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NPGD8JWN');</script>
+    <!-- End Google Tag Manager -->
 
     <!-- Additional Meta Tags -->
     <meta name="theme-color" content="#1c1c1e">
@@ -620,6 +619,11 @@
     </style>
 </head>
 <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NPGD8JWN"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
@@ -893,10 +897,10 @@
             if (isProcessing || uploadedImages.length === 0) return;
             isProcessing = true;
 
-            // GA4 이벤트 전송 - 생성 버튼 클릭
-            gtag('event', 'generate_click', {
-                'event_category': 'engagement',
-                'event_label': 'AI4컷 생성',
+            // GTM dataLayer 이벤트 전송 - 생성 버튼 클릭
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'generate_click',
                 'image_count': uploadedImages.length,
                 'layout': document.getElementById('layout').value,
                 'color_mode': document.getElementById('color-mode').value
