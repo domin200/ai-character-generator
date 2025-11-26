@@ -83,43 +83,67 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
-        .image-container-dual {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+        .upload-section {
             margin-bottom: 24px;
         }
 
-        .image-box-dual {
+        .upload-section h3 {
+            color: #ffffff;
+            margin-bottom: 12px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .uploaded-images {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .uploaded-image-item {
             position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #3c3c3e;
         }
 
-        .image-box-dual h3 {
-            margin-bottom: 8px;
+        .uploaded-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .remove-btn {
+        .remove-image-btn {
             position: absolute;
-            top: 0;
-            right: 0;
-            background: #ff3b30;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 59, 48, 0.9);
             color: white;
             border: none;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
+            border-radius: 50%;
+            font-size: 14px;
+            line-height: 1;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: background 0.2s;
         }
 
-        .remove-btn:hover {
-            background: #d63029;
+        .remove-image-btn:hover {
+            background: #ff3b30;
         }
 
-        @media (max-width: 500px) {
-            .image-container-dual {
-                grid-template-columns: 1fr;
-            }
+        .upload-hint {
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
         }
 
         /* 모바일 반응형 */
@@ -586,27 +610,15 @@
         <h1>AI4컷 <small style="font-size: 0.5em; font-weight: 400; opacity: 0.7;">by <a href="https://mirai.fun/" target="_blank" rel="noopener noreferrer">MIRAI</a></small></h1>
 
         <div class="main-content">
-            <div class="image-container-dual">
-                <div class="image-box-dual">
-                    <h3>이미지 1 <small style="font-weight: 400; opacity: 0.6;">(필수)</small></h3>
-                    <div class="image-display" id="preview-container-1">
-                        <div class="upload-prompt">
-                            <div class="upload-icon">+</div>
-                            <div class="upload-text">첫 번째 이미지</div>
-                        </div>
+            <div class="upload-section">
+                <div class="image-display" id="preview-container">
+                    <div class="upload-prompt">
+                        <div class="upload-icon">+</div>
+                        <div class="upload-text">이미지 업로드</div>
+                        <div class="upload-subtext">최대 2장 (2인 4컷 가능)</div>
                     </div>
                 </div>
-                <div class="image-box-dual">
-                    <h3>이미지 2 <small style="font-weight: 400; opacity: 0.6;">(선택)</small></h3>
-                    <div class="image-display" id="preview-container-2">
-                        <div class="upload-prompt">
-                            <div class="upload-icon">+</div>
-                            <div class="upload-text">두 번째 이미지</div>
-                            <div class="upload-subtext">2인 4컷용</div>
-                        </div>
-                    </div>
-                    <button type="button" class="remove-btn" id="remove-image-2" style="display: none;">제거</button>
-                </div>
+                <div class="uploaded-images" id="uploaded-images"></div>
             </div>
 
             <form action="/generate" method="post" enctype="multipart/form-data" id="upload-form">
@@ -682,20 +694,18 @@
     </div>
 
     <script>
-        const previewContainer1 = document.getElementById('preview-container-1');
-        const previewContainer2 = document.getElementById('preview-container-2');
+        const previewContainer = document.getElementById('preview-container');
+        const uploadedImagesContainer = document.getElementById('uploaded-images');
         const fileInput = document.getElementById('image');
         const fileInput2 = document.getElementById('image2');
-        const removeBtn2 = document.getElementById('remove-image-2');
         const generateBtn = document.getElementById('generate-btn');
         const uploadForm = document.getElementById('upload-form');
         const colorPicker = document.getElementById('frame-color');
         const colorCodeDisplay = document.getElementById('color-code-display');
         const colorPickerWrapper = document.querySelector('.color-picker-wrapper');
 
-        // 이미지 상태 추적
-        let hasImage1 = false;
-        let hasImage2 = false;
+        // 업로드된 이미지 데이터 (최대 2개)
+        let uploadedImages = [];
 
         // 컬러피커 값 변경 시 색상 코드 업데이트
         colorPicker.addEventListener('input', function(e) {
@@ -704,7 +714,6 @@
 
         // wrapper 클릭 시 컬러피커 열기
         colorPickerWrapper.addEventListener('click', function(e) {
-            // 이미 컬러피커를 직접 클릭한 경우가 아니면 클릭 트리거
             if (e.target !== colorPicker) {
                 colorPicker.click();
             }
@@ -727,7 +736,6 @@
 
             toastContainer.appendChild(toast);
 
-            // Auto remove after 3 seconds
             setTimeout(() => {
                 toast.classList.add('hiding');
                 setTimeout(() => {
@@ -738,146 +746,140 @@
 
         // 버튼 활성화 체크
         function updateGenerateButton() {
-            generateBtn.disabled = !hasImage1;
+            generateBtn.disabled = uploadedImages.length === 0;
         }
 
-        // 이미지 1 클릭
-        previewContainer1.addEventListener('click', function() {
-            if (!isProcessing) {
-                fileInput.click();
+        // 업로드 영역 상태 업데이트
+        function updateUploadArea() {
+            if (uploadedImages.length >= 2) {
+                previewContainer.style.display = 'none';
+            } else {
+                previewContainer.style.display = 'flex';
+            }
+        }
+
+        // 미리보기 렌더링
+        function renderUploadedImages() {
+            uploadedImagesContainer.innerHTML = '';
+
+            uploadedImages.forEach((imgData, index) => {
+                const item = document.createElement('div');
+                item.className = 'uploaded-image-item';
+                item.innerHTML = `
+                    <img src="${imgData.dataUrl}" alt="업로드 이미지 ${index + 1}">
+                    <button type="button" class="remove-image-btn" data-index="${index}">&times;</button>
+                `;
+                uploadedImagesContainer.appendChild(item);
+            });
+
+            // 삭제 버튼 이벤트 연결
+            document.querySelectorAll('.remove-image-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const index = parseInt(this.dataset.index);
+                    removeImage(index);
+                });
+            });
+
+            updateUploadArea();
+            updateGenerateButton();
+            syncFileInputs();
+        }
+
+        // 이미지 제거
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            renderUploadedImages();
+        }
+
+        // file input 동기화
+        function syncFileInputs() {
+            // DataTransfer를 사용하여 file input 동기화
+            const dt1 = new DataTransfer();
+            const dt2 = new DataTransfer();
+
+            if (uploadedImages.length >= 1 && uploadedImages[0].file) {
+                dt1.items.add(uploadedImages[0].file);
+            }
+            if (uploadedImages.length >= 2 && uploadedImages[1].file) {
+                dt2.items.add(uploadedImages[1].file);
+            }
+
+            fileInput.files = dt1.files;
+            fileInput2.files = dt2.files;
+        }
+
+        // 업로드 영역 클릭
+        previewContainer.addEventListener('click', function() {
+            if (!isProcessing && uploadedImages.length < 2) {
+                // 임시 input 생성하여 다중 선택 허용
+                const tempInput = document.createElement('input');
+                tempInput.type = 'file';
+                tempInput.accept = 'image/*';
+                tempInput.multiple = true;
+                tempInput.onchange = function(e) {
+                    handleFiles(e.target.files);
+                };
+                tempInput.click();
             }
         });
 
-        // 이미지 2 클릭
-        previewContainer2.addEventListener('click', function() {
-            if (!isProcessing) {
-                fileInput2.click();
-            }
-        });
-
-        // 드래그 앤 드롭 - 이미지 1
-        previewContainer1.addEventListener('dragover', function(e) {
-            if (isProcessing) return;
+        // 드래그 앤 드롭
+        previewContainer.addEventListener('dragover', function(e) {
+            if (isProcessing || uploadedImages.length >= 2) return;
             e.preventDefault();
             e.stopPropagation();
             this.classList.add('drag-over');
         });
 
-        previewContainer1.addEventListener('dragleave', function(e) {
+        previewContainer.addEventListener('dragleave', function(e) {
             if (isProcessing) return;
             e.preventDefault();
             e.stopPropagation();
             this.classList.remove('drag-over');
         });
 
-        previewContainer1.addEventListener('drop', function(e) {
-            if (isProcessing) return;
-            e.preventDefault();
-            e.stopPropagation();
-            this.classList.remove('drag-over');
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0 && files[0].type.startsWith('image/')) {
-                fileInput.files = files;
-                handleFileSelect1(files[0]);
-            }
-        });
-
-        // 드래그 앤 드롭 - 이미지 2
-        previewContainer2.addEventListener('dragover', function(e) {
-            if (isProcessing) return;
-            e.preventDefault();
-            e.stopPropagation();
-            this.classList.add('drag-over');
-        });
-
-        previewContainer2.addEventListener('dragleave', function(e) {
-            if (isProcessing) return;
-            e.preventDefault();
-            e.stopPropagation();
-            this.classList.remove('drag-over');
-        });
-
-        previewContainer2.addEventListener('drop', function(e) {
-            if (isProcessing) return;
+        previewContainer.addEventListener('drop', function(e) {
+            if (isProcessing || uploadedImages.length >= 2) return;
             e.preventDefault();
             e.stopPropagation();
             this.classList.remove('drag-over');
 
             const files = e.dataTransfer.files;
-            if (files.length > 0 && files[0].type.startsWith('image/')) {
-                fileInput2.files = files;
-                handleFileSelect2(files[0]);
-            }
+            handleFiles(files);
         });
 
-        // 파일 선택 처리 - 이미지 1
-        fileInput.addEventListener('change', function(e) {
-            if (isProcessing) return;
-            const file = e.target.files[0];
-            if (file) {
-                handleFileSelect1(file);
-            }
-        });
+        // 파일 처리
+        function handleFiles(files) {
+            const remaining = 2 - uploadedImages.length;
+            const filesToProcess = Array.from(files).slice(0, remaining);
 
-        // 파일 선택 처리 - 이미지 2
-        fileInput2.addEventListener('change', function(e) {
-            if (isProcessing) return;
-            const file = e.target.files[0];
-            if (file) {
-                handleFileSelect2(file);
-            }
-        });
-
-        // 이미지 1 처리
-        function handleFileSelect1(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewContainer1.innerHTML = `<img src="${e.target.result}" alt="Preview 1">`;
-                hasImage1 = true;
-                updateGenerateButton();
-            }
-            reader.readAsDataURL(file);
+            filesToProcess.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        uploadedImages.push({
+                            file: file,
+                            dataUrl: e.target.result
+                        });
+                        renderUploadedImages();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
         }
-
-        // 이미지 2 처리
-        function handleFileSelect2(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewContainer2.innerHTML = `<img src="${e.target.result}" alt="Preview 2">`;
-                hasImage2 = true;
-                removeBtn2.style.display = 'block';
-            }
-            reader.readAsDataURL(file);
-        }
-
-        // 이미지 2 제거
-        removeBtn2.addEventListener('click', function(e) {
-            e.stopPropagation();
-            previewContainer2.innerHTML = `
-                <div class="upload-prompt">
-                    <div class="upload-icon">+</div>
-                    <div class="upload-text">두 번째 이미지</div>
-                    <div class="upload-subtext">2인 4컷용</div>
-                </div>
-            `;
-            fileInput2.value = '';
-            hasImage2 = false;
-            removeBtn2.style.display = 'none';
-        });
 
         // 폼 제출시 AJAX 처리
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            if (isProcessing || !hasImage1) return;
+            if (isProcessing || uploadedImages.length === 0) return;
             isProcessing = true;
 
             const formData = new FormData(uploadForm);
 
-            // 원본 이미지 업로드 영역 비활성화
-            previewContainer1.classList.add('disabled');
-            previewContainer2.classList.add('disabled');
+            // 업로드 영역 비활성화
+            previewContainer.classList.add('disabled');
             fileInput.disabled = true;
             fileInput2.disabled = true;
 
@@ -894,7 +896,6 @@
                 console.log('Generate response received:', data);
 
                 if (data.success && data.id) {
-                    // 결과 페이지로 이동
                     window.location.href = `/result?id=${data.id}`;
                 } else if (data.error) {
                     showToast(data.error, 'error');
@@ -910,13 +911,11 @@
 
         // UI 초기화 함수
         function resetUI() {
-            generateBtn.disabled = !hasImage1;
+            generateBtn.disabled = uploadedImages.length === 0;
             generateBtn.textContent = 'AI4컷 생성 시작';
             isProcessing = false;
 
-            // 원본 이미지 업로드 영역 재활성화
-            previewContainer1.classList.remove('disabled');
-            previewContainer2.classList.remove('disabled');
+            previewContainer.classList.remove('disabled');
             fileInput.disabled = false;
             fileInput2.disabled = false;
         }
