@@ -93,6 +93,10 @@ half the size of the logo, as small as possible while maintaining QR functionali
 def index():
     return render_template('index.html')
 
+@app.route('/result')
+def result():
+    return render_template('result.html')
+
 @app.route('/og-image.png')
 def og_image():
     from flask import send_file
