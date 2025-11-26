@@ -147,34 +147,36 @@
             background: #ff3b30;
         }
 
-        @media (max-width: 600px) {
-            .upload-section {
-                flex-direction: column;
-            }
-
-            .uploaded-images {
-                justify-content: center;
-            }
-
-            .uploaded-image-item {
-                width: 120px;
-                height: 160px;
-            }
-        }
-
         /* 모바일 반응형 */
         @media (max-width: 768px) {
+            body {
+                padding: 24px 16px;
+            }
 
             h1 {
                 font-size: 1.5rem;
             }
 
-            body {
-                padding: 24px 16px;
-            }
-
             .main-content {
                 padding: 16px;
+            }
+
+            .upload-section {
+                flex-direction: column;
+            }
+
+            .upload-section .image-display {
+                min-height: 180px;
+            }
+
+            .uploaded-images {
+                justify-content: center;
+                order: -1;
+            }
+
+            .uploaded-image-item {
+                width: 100px;
+                height: 130px;
             }
         }
 
@@ -273,18 +275,9 @@
             flex-wrap: wrap;
         }
 
-        @media (max-width: 500px) {
-            .selector-row {
-                flex-direction: column;
-            }
-
-            .selector-item select {
-                font-size: 16px; /* iOS 줌 방지 */
-            }
-        }
-
         .selector-item {
             flex: 1;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -303,8 +296,9 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             color: #ffffff;
-            font-size: 0.9375rem;
+            font-size: 16px;
             transition: background-color 0.2s ease, border-color 0.2s ease;
+            width: 100%;
         }
 
         .selector-item select {
@@ -317,12 +311,19 @@
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 12px center;
-            position: relative;
-            z-index: 1;
         }
 
-        /* 모바일에서 네이티브 드롭다운 사용 */
+        /* 모바일 selector-row */
         @media (max-width: 768px) {
+            .selector-row {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .selector-item {
+                width: 100%;
+            }
+
             .selector-item select {
                 appearance: menulist;
                 -webkit-appearance: menulist;
