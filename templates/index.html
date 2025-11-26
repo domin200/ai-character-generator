@@ -272,12 +272,11 @@
             margin-bottom: 20px;
             display: flex;
             gap: 12px;
-            flex-wrap: wrap;
         }
 
         .selector-item {
             flex: 1;
-            min-width: 0;
+            min-width: 80px;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -314,15 +313,18 @@
         }
 
         /* 모바일 selector-row */
-        @media (max-width: 768px) {
+        @media screen and (max-width: 768px) {
             .selector-row {
-                flex-direction: column !important;
-                gap: 16px !important;
+                display: block !important;
             }
 
             .selector-item {
                 width: 100% !important;
-                flex: none !important;
+                margin-bottom: 16px !important;
+            }
+
+            .selector-item:last-child {
+                margin-bottom: 0 !important;
             }
 
             .selector-item select {
