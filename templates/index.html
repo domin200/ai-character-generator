@@ -83,15 +83,43 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
-        .image-container {
-            display: flex;
-            justify-content: center;
+        .image-container-dual {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
             margin-bottom: 24px;
         }
 
-        .image-box {
-            max-width: 400px;
-            width: 100%;
+        .image-box-dual {
+            position: relative;
+        }
+
+        .image-box-dual h3 {
+            margin-bottom: 8px;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ff3b30;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #d63029;
+        }
+
+        @media (max-width: 500px) {
+            .image-container-dual {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* 모바일 반응형 */
@@ -558,22 +586,32 @@
         <h1>AI4컷 <small style="font-size: 0.5em; font-weight: 400; opacity: 0.7;">by <a href="https://mirai.fun/" target="_blank" rel="noopener noreferrer">MIRAI</a></small></h1>
 
         <div class="main-content">
-            <div class="image-container">
-                <div class="image-box">
-                    <h3>원본 이미지</h3>
-                    <div class="image-display" id="preview-container">
+            <div class="image-container-dual">
+                <div class="image-box-dual">
+                    <h3>이미지 1 <small style="font-weight: 400; opacity: 0.6;">(필수)</small></h3>
+                    <div class="image-display" id="preview-container-1">
                         <div class="upload-prompt">
                             <div class="upload-icon">+</div>
-                            <div class="upload-text">클릭하여 이미지 선택</div>
-                            <div class="upload-subtext">또는 이미지를 드래그하여 놓으세요</div>
+                            <div class="upload-text">첫 번째 이미지</div>
                         </div>
                     </div>
                 </div>
-
+                <div class="image-box-dual">
+                    <h3>이미지 2 <small style="font-weight: 400; opacity: 0.6;">(선택)</small></h3>
+                    <div class="image-display" id="preview-container-2">
+                        <div class="upload-prompt">
+                            <div class="upload-icon">+</div>
+                            <div class="upload-text">두 번째 이미지</div>
+                            <div class="upload-subtext">2인 4컷용</div>
+                        </div>
+                    </div>
+                    <button type="button" class="remove-btn" id="remove-image-2" style="display: none;">제거</button>
+                </div>
             </div>
 
             <form action="/generate" method="post" enctype="multipart/form-data" id="upload-form">
-                <input type="file" id="image" name="image" accept="image/*" required class="hidden-file-input">
+                <input type="file" id="image" name="image" accept="image/*" class="hidden-file-input">
+                <input type="file" id="image2" name="image2" accept="image/*" class="hidden-file-input">
 
                 <div class="selector-row">
                     <div class="selector-item">
@@ -589,6 +627,13 @@
                             <option value="1x4" selected>1x4 (세로 4장)</option>
                             <option value="1x3">1x3 (세로 3장)</option>
                             <option value="2x2">2x2 (2줄 배치)</option>
+                        </select>
+                    </div>
+                    <div class="selector-item">
+                        <label for="color-mode">사진 색상</label>
+                        <select id="color-mode" name="color_mode">
+                            <option value="color" selected>컬러</option>
+                            <option value="bw">흑백</option>
                         </select>
                     </div>
                 </div>
@@ -637,13 +682,20 @@
     </div>
 
     <script>
-        const previewContainer = document.getElementById('preview-container');
+        const previewContainer1 = document.getElementById('preview-container-1');
+        const previewContainer2 = document.getElementById('preview-container-2');
         const fileInput = document.getElementById('image');
+        const fileInput2 = document.getElementById('image2');
+        const removeBtn2 = document.getElementById('remove-image-2');
         const generateBtn = document.getElementById('generate-btn');
         const uploadForm = document.getElementById('upload-form');
         const colorPicker = document.getElementById('frame-color');
         const colorCodeDisplay = document.getElementById('color-code-display');
         const colorPickerWrapper = document.querySelector('.color-picker-wrapper');
+
+        // 이미지 상태 추적
+        let hasImage1 = false;
+        let hasImage2 = false;
 
         // 컬러피커 값 변경 시 색상 코드 업데이트
         colorPicker.addEventListener('input', function(e) {
@@ -684,29 +736,41 @@
             }, 3000);
         }
 
-        // 클릭하여 파일 선택
-        previewContainer.addEventListener('click', function() {
+        // 버튼 활성화 체크
+        function updateGenerateButton() {
+            generateBtn.disabled = !hasImage1;
+        }
+
+        // 이미지 1 클릭
+        previewContainer1.addEventListener('click', function() {
             if (!isProcessing) {
                 fileInput.click();
             }
         });
 
-        // 드래그 앤 드롭 기능
-        previewContainer.addEventListener('dragover', function(e) {
+        // 이미지 2 클릭
+        previewContainer2.addEventListener('click', function() {
+            if (!isProcessing) {
+                fileInput2.click();
+            }
+        });
+
+        // 드래그 앤 드롭 - 이미지 1
+        previewContainer1.addEventListener('dragover', function(e) {
             if (isProcessing) return;
             e.preventDefault();
             e.stopPropagation();
             this.classList.add('drag-over');
         });
 
-        previewContainer.addEventListener('dragleave', function(e) {
+        previewContainer1.addEventListener('dragleave', function(e) {
             if (isProcessing) return;
             e.preventDefault();
             e.stopPropagation();
             this.classList.remove('drag-over');
         });
 
-        previewContainer.addEventListener('drop', function(e) {
+        previewContainer1.addEventListener('drop', function(e) {
             if (isProcessing) return;
             e.preventDefault();
             e.stopPropagation();
@@ -715,43 +779,107 @@
             const files = e.dataTransfer.files;
             if (files.length > 0 && files[0].type.startsWith('image/')) {
                 fileInput.files = files;
-                handleFileSelect(files[0]);
+                handleFileSelect1(files[0]);
             }
         });
 
-        // 파일 선택 처리
+        // 드래그 앤 드롭 - 이미지 2
+        previewContainer2.addEventListener('dragover', function(e) {
+            if (isProcessing) return;
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('drag-over');
+        });
+
+        previewContainer2.addEventListener('dragleave', function(e) {
+            if (isProcessing) return;
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('drag-over');
+        });
+
+        previewContainer2.addEventListener('drop', function(e) {
+            if (isProcessing) return;
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                fileInput2.files = files;
+                handleFileSelect2(files[0]);
+            }
+        });
+
+        // 파일 선택 처리 - 이미지 1
         fileInput.addEventListener('change', function(e) {
             if (isProcessing) return;
             const file = e.target.files[0];
             if (file) {
-                handleFileSelect(file);
+                handleFileSelect1(file);
             }
         });
 
-        // 파일 선택시 처리
-        function handleFileSelect(file) {
-            // 이미지 미리보기
+        // 파일 선택 처리 - 이미지 2
+        fileInput2.addEventListener('change', function(e) {
+            if (isProcessing) return;
+            const file = e.target.files[0];
+            if (file) {
+                handleFileSelect2(file);
+            }
+        });
+
+        // 이미지 1 처리
+        function handleFileSelect1(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                previewContainer.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-                // 버튼 활성화
-                generateBtn.disabled = false;
+                previewContainer1.innerHTML = `<img src="${e.target.result}" alt="Preview 1">`;
+                hasImage1 = true;
+                updateGenerateButton();
             }
             reader.readAsDataURL(file);
         }
+
+        // 이미지 2 처리
+        function handleFileSelect2(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewContainer2.innerHTML = `<img src="${e.target.result}" alt="Preview 2">`;
+                hasImage2 = true;
+                removeBtn2.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+
+        // 이미지 2 제거
+        removeBtn2.addEventListener('click', function(e) {
+            e.stopPropagation();
+            previewContainer2.innerHTML = `
+                <div class="upload-prompt">
+                    <div class="upload-icon">+</div>
+                    <div class="upload-text">두 번째 이미지</div>
+                    <div class="upload-subtext">2인 4컷용</div>
+                </div>
+            `;
+            fileInput2.value = '';
+            hasImage2 = false;
+            removeBtn2.style.display = 'none';
+        });
 
         // 폼 제출시 AJAX 처리
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            if (isProcessing) return;
+            if (isProcessing || !hasImage1) return;
             isProcessing = true;
 
             const formData = new FormData(uploadForm);
 
             // 원본 이미지 업로드 영역 비활성화
-            previewContainer.classList.add('disabled');
+            previewContainer1.classList.add('disabled');
+            previewContainer2.classList.add('disabled');
             fileInput.disabled = true;
+            fileInput2.disabled = true;
 
             generateBtn.disabled = true;
             generateBtn.textContent = '처리 중...';
@@ -782,13 +910,15 @@
 
         // UI 초기화 함수
         function resetUI() {
-            generateBtn.disabled = false;
+            generateBtn.disabled = !hasImage1;
             generateBtn.textContent = 'AI4컷 생성 시작';
             isProcessing = false;
 
             // 원본 이미지 업로드 영역 재활성화
-            previewContainer.classList.remove('disabled');
+            previewContainer1.classList.remove('disabled');
+            previewContainer2.classList.remove('disabled');
             fileInput.disabled = false;
+            fileInput2.disabled = false;
         }
 
         // Gallery Image Modal
