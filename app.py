@@ -91,58 +91,6 @@ Date should be 10% of logo size, small. Do not include 'AI4컷' text.
 QR code should be inserted small and naturally at the bottom right corner of the frame (to the right of the date),
 half the size of the logo, as small as possible while maintaining QR functionality."""
 
-# 2인용 AI4컷 생성 프롬프트 (두 사람/캐릭터가 함께 찍는 4컷)
-def get_ai_4_cut_prompt_duo(frame_color='black', layout='1x4', is_bw=False):
-    from datetime import datetime
-    current_date = datetime.now().strftime('%Y.%m.%d')
-
-    # 프레임 색상 (hex 코드 또는 기본 색상 이름)
-    if frame_color.startswith('#'):
-        frame_instruction = f"color {frame_color}"
-    else:
-        color_map = {
-            'black': 'color #000000',
-            'gray': 'color #808080',
-            'white': 'color #FFFFFF'
-        }
-        frame_instruction = color_map.get(frame_color, 'color #000000')
-
-    # 흑백 모드 설정
-    color_instruction = "All photos must be in BLACK AND WHITE (grayscale/monochrome). No color in the photos." if is_bw else ""
-
-    # 레이아웃별 프롬프트 생성
-    if layout == '1x3':
-        layout_instruction = "IMPORTANT: 3 images arranged in SINGLE COLUMN vertically (1x3 layout)."
-        layout_structure = "[narrow top margin] → [image 1] → [image 2] → [image 3] → [bottom section with logo, date, QR]."
-        image_count_text = "3 images"
-        aspect_ratio = "1:1 aspect ratio (square)"
-        frame_size = "1060x3187 pixels"
-    elif layout == '2x2':
-        layout_instruction = "IMPORTANT: 4 images arranged in 2x2 grid layout."
-        layout_structure = "[narrow top margin] → [Row 1: image 1 | image 2] → [Row 2: image 3 | image 4] → [bottom section with logo, date, QR]."
-        image_count_text = "4 images"
-        aspect_ratio = "3:4 aspect ratio (portrait orientation)"
-        frame_size = "2120x3187 pixels"
-    else:  # 1x4 (default)
-        layout_instruction = "IMPORTANT: 4 images arranged in SINGLE COLUMN vertically (1x4 layout)."
-        layout_structure = "[narrow top margin] → [image 1] → [image 2] → [image 3] → [image 4] → [bottom section with logo, date, QR]."
-        image_count_text = "4 images"
-        aspect_ratio = "4:3 aspect ratio"
-        frame_size = "1060x3187 pixels"
-
-    return f"""Create an AI-4-cut photo strip featuring TWO people/characters together. Full frame size {frame_size}.
-{layout_instruction}
-{image_count_text}, each with {aspect_ratio}.
-{color_instruction}
-IMPORTANT: Both subjects from the two input images must appear TOGETHER in EVERY photo, naturally interacting like friends or couples taking photos together in a photo booth.
-Each image should show different fun poses: smiling together, making peace signs, funny faces, hugging, etc.
-The two subjects should be side by side or naturally posed together in each frame.
-All frame with {frame_instruction}. No text on top of frame. Top margin should be narrow.
-Layout structure: {layout_structure}
-At the bottom of the frame, add 'MIRAI' (use logo.png) and '{current_date}' in vertical center alignment.
-Date should be 10% of logo size, small. Do not include 'AI4컷' text.
-QR code should be inserted small at the bottom right corner, half the size of the logo."""
-
 # 웹 배포용 - 로컬 저장 제거
 
 @app.route('/')
@@ -353,11 +301,8 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
 
         print(f"Calling FAL AI with {len(image_urls)} images and prompt...")
 
-        # 프롬프트 선택 (1인 or 2인, 컬러 or 흑백)
-        if is_duo:
-            prompt = get_ai_4_cut_prompt_duo(frame_color, layout, is_bw)
-        else:
-            prompt = get_ai_4_cut_prompt(frame_color, layout, is_bw)
+        # 프롬프트 생성 (1인, 2인 동일 프롬프트 사용)
+        prompt = get_ai_4_cut_prompt(frame_color, layout, is_bw)
 
         # FAL AI nano-banana-pro/edit 호출
         handler = fal_client.submit(

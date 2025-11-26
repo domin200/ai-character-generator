@@ -1,1 +1,1 @@
-🔗 canonical URL을 ai4cut.mirai.fun으로 변경
+🗑️ 2인용 별도 프롬프트 제거, 1인/2인 동일 프롬프트 사용
