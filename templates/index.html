@@ -316,20 +316,21 @@
         /* 모바일 selector-row */
         @media (max-width: 768px) {
             .selector-row {
-                flex-direction: column;
-                gap: 16px;
+                flex-direction: column !important;
+                gap: 16px !important;
             }
 
             .selector-item {
-                width: 100%;
+                width: 100% !important;
+                flex: none !important;
             }
 
             .selector-item select {
-                appearance: menulist;
-                -webkit-appearance: menulist;
-                -moz-appearance: menulist;
-                background-image: none;
-                padding-right: 16px;
+                appearance: menulist !important;
+                -webkit-appearance: menulist !important;
+                -moz-appearance: menulist !important;
+                background-image: none !important;
+                padding-right: 16px !important;
             }
         }
 
