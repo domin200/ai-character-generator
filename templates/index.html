@@ -270,6 +270,13 @@
             margin-bottom: 20px;
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 500px) {
+            .selector-row {
+                flex-direction: column;
+            }
         }
 
         .selector-item {
