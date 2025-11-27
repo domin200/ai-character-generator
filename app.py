@@ -108,6 +108,20 @@ def og_image():
     og_path = os.path.join(os.path.dirname(__file__), 'static_image', 'og-image.png')
     return send_file(og_path, mimetype='image/png')
 
+@app.route('/robots.txt')
+def robots():
+    from flask import send_file
+    import os
+    robots_path = os.path.join(os.path.dirname(__file__), 'static', 'robots.txt')
+    return send_file(robots_path, mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def sitemap():
+    from flask import send_file
+    import os
+    sitemap_path = os.path.join(os.path.dirname(__file__), 'static', 'sitemap.xml')
+    return send_file(sitemap_path, mimetype='application/xml')
+
 # 웹 배포용 - 로컬 파일 서빙 제거
 
 @app.route('/api/check_progress')
