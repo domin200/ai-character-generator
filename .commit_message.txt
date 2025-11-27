@@ -1,1 +1,1 @@
-🔍 SEO 최적화: robots.txt, sitemap.xml, JSON-LD 추가
+🎨 MIRAI 스타일 헤더 적용

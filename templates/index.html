@@ -85,33 +85,79 @@
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             background: #1c1c1e;
             min-height: 100vh;
-            padding: 40px 20px;
+            padding: 0;
             color: #ffffff;
+        }
+
+        /* Header Styles */
+        .header {
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 0 20px;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .header-logo-img {
+            height: 24px;
+            width: auto;
+        }
+
+        .header-badge {
+            background: linear-gradient(135deg, #30D889 0%, #00C4B4 100%);
+            color: #000;
+            font-size: 0.625rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: -0.3px;
+        }
+
+        @media (max-width: 768px) {
+            .header-inner {
+                height: 52px;
+            }
+
+            .header-logo-img {
+                height: 20px;
+            }
+
+            .header-title {
+                font-size: 1rem;
+            }
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
-        }
-
-        h1 {
-            text-align: center;
-            color: #ffffff;
-            margin-bottom: 32px;
-            font-size: 2rem;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-        }
-
-        h1 a {
-            color: #30D889;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        h1 a:hover {
-            color: #50F8A8;
-            text-decoration: underline;
+            padding: 40px 20px;
         }
 
         .main-content {
@@ -179,14 +225,6 @@
 
         /* 모바일 반응형 */
         @media (max-width: 768px) {
-            body {
-                padding: 24px 16px;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-            }
-
             .main-content {
                 padding: 16px;
             }
@@ -699,11 +737,21 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="https://mirai.fun/" target="_blank" rel="noopener noreferrer" class="header-logo">
+                <img src="https://mirai.fun/logo.svg" alt="MIRAI" class="header-logo-img">
+                <span class="header-badge">BETA</span>
+            </a>
+            <div class="header-title">AI4컷</div>
+        </div>
+    </header>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
     <div class="container">
-        <h1>AI4컷 <small style="font-size: 0.5em; font-weight: 400; opacity: 0.7;">by <a href="https://mirai.fun/" target="_blank" rel="noopener noreferrer">MIRAI</a></small></h1>
 
         <div class="main-content">
             <div class="upload-section">
