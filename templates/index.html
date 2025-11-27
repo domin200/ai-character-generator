@@ -320,11 +320,26 @@
 
             .selector-item {
                 width: 100% !important;
-                margin-bottom: 16px !important;
+                margin-bottom: 12px !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 12px !important;
             }
 
             .selector-item:last-child {
                 margin-bottom: 0 !important;
+            }
+
+            .selector-item label {
+                flex-shrink: 0;
+                min-width: 70px;
+            }
+
+            .selector-item select,
+            .selector-item .color-picker-wrapper {
+                flex: 1;
+                max-width: none;
             }
 
             .selector-item select {
