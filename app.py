@@ -139,6 +139,13 @@ def sitemap():
     sitemap_path = os.path.join(os.path.dirname(__file__), 'static', 'sitemap.xml')
     return send_file(sitemap_path, mimetype='application/xml')
 
+@app.route('/ads.txt')
+def ads_txt():
+    from flask import send_file
+    import os
+    ads_path = os.path.join(os.path.dirname(__file__), 'static', 'ads.txt')
+    return send_file(ads_path, mimetype='text/plain')
+
 # 웹 배포용 - 로컬 파일 서빙 제거
 
 @app.route('/api/check_progress')
