@@ -220,6 +220,11 @@
             background: #222;
         }
 
+        /* 2x2 레이아웃용 비율 */
+        .image-container.layout-2x2 {
+            aspect-ratio: 2 / 3;
+        }
+
         /* 로딩 중 스켈레톤 */
         .image-skeleton {
             position: absolute;
@@ -582,6 +587,18 @@
             return new Blob([u8arr], { type: mime });
         }
 
+        // 레이아웃에 따라 스켈레톤 비율 조정
+        function applyLayoutToSkeleton(layout) {
+            const containers = document.querySelectorAll('.image-container');
+            containers.forEach(container => {
+                if (layout === '2x2') {
+                    container.classList.add('layout-2x2');
+                } else {
+                    container.classList.remove('layout-2x2');
+                }
+            });
+        }
+
         // 페이지 로드 시 처리
         function init() {
             // 이미 결과가 있는지 확인
@@ -592,6 +609,10 @@
                     if (data.result_urls && data.result_urls.length > 0) {
                         resultImageUrls = data.result_urls;
                         resultFilename = data.result_filename || 'ai_4_cut.png';
+                        // 레이아웃 적용
+                        if (data.layout) {
+                            applyLayoutToSkeleton(data.layout);
+                        }
                         displayResults(resultImageUrls);
                         showToast(`AI4컷이 성공적으로 생성되었습니다! (${resultImageUrls.length}장)`, 'success');
                         sessionStorage.removeItem('ai4cut_result');
@@ -608,6 +629,10 @@
                 try {
                     const requestData = JSON.parse(storedRequest);
                     console.log('[Result] Found request data, starting generation...');
+                    // 레이아웃에 따라 스켈레톤 비율 조정
+                    if (requestData.layout) {
+                        applyLayoutToSkeleton(requestData.layout);
+                    }
                     sessionStorage.removeItem('ai4cut_request');
                     startGeneration(requestData);
                     return;
