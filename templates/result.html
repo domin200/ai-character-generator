@@ -228,6 +228,21 @@
             display: block;
         }
 
+        .loading-logo {
+            margin-top: 30px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .loading-logo:hover {
+            opacity: 1;
+        }
+
+        .loading-logo img {
+            height: 28px;
+            width: auto;
+        }
+
         .button-group {
             display: flex;
             flex-direction: column;
@@ -409,6 +424,9 @@
                         <div class="spinner"></div>
                         <p>AI4컷 생성 중...</p>
                         <small>약 1~3분 정도 소요됩니다</small>
+                        <a href="https://mirai.fun/" target="_blank" rel="noopener noreferrer" class="loading-logo">
+                            <img src="https://mirai.fun/logo.svg" alt="MIRAI">
+                        </a>
                     </div>
                 </div>
                 <div class="images-grid" id="result-container" style="display: none;"></div>
