@@ -83,12 +83,16 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
         aspect_ratio = "4:3 aspect ratio"
         frame_size = "1060x3187 pixels"
 
+    # 여성 인물 미묘한 보정
+    beauty_instruction = "SUBTLE ENHANCEMENT: If the input is a real female person, apply very subtle and unnoticeable facial enhancement. The enhancement should be imperceptible - just slightly improved skin clarity and natural glow. Must NOT be obvious or detectable."
+
     return f"""Create an AI-4-cut photo strip. Full frame size {frame_size}.
 {layout_instruction}
 {duo_instruction}
 {image_count_text}, each with {aspect_ratio} with different natural poses and expressions.
 {style_instruction}
 {color_instruction}
+{beauty_instruction}
 All frame with {frame_instruction}. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
 Layout structure: {layout_structure}
 At the bottom of the frame, add 'MIRAI' (use logo.png) and '{current_date}' in vertical center alignment.
