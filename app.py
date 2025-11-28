@@ -40,7 +40,7 @@ def clean_old_states():
         del app_state[uid]
 
 # AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃 동적 생성)
-def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color'):
+def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', style='default'):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
@@ -66,6 +66,14 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color'):
     }
     color_instruction = color_mode_instructions.get(color_mode, "")
 
+    # 스타일 설정
+    style_instructions = {
+        'default': "",
+        'animation': "IMPORTANT STYLE: Transform the person into 2D ANIME/ANIMATION style artwork. Convert to Japanese anime art style with cel-shading, big expressive eyes, and stylized features typical of anime characters.",
+        'realistic': "IMPORTANT STYLE: If the input image is an animated character or non-real person, transform them into REALISTIC PHOTOREALISTIC style. Make them look like a real human cosplaying the character, with realistic skin texture, lighting, and human features."
+    }
+    style_instruction = style_instructions.get(style, "")
+
     # 레이아웃별 프롬프트 생성
     if layout == '1x3':
         layout_instruction = "IMPORTANT: 3 images arranged in SINGLE COLUMN vertically (1x3 layout). NOT 2x2, NOT any other layout. Only vertical single column with 3 images."
@@ -89,6 +97,7 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color'):
     return f"""Create an AI-4-cut photo strip. Full frame size {frame_size}.
 {layout_instruction}
 {image_count_text}, each with {aspect_ratio} with different natural poses and expressions.
+{style_instruction}
 {color_instruction}
 All frame with {frame_instruction}. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
 Layout structure: {layout_structure}
@@ -225,9 +234,13 @@ def generate_image():
         layout = request.form.get('layout', '1x4')
         print(f"Layout: {layout}")
 
-        # 색상 모드 가져오기 (컬러/흑백)
+        # 색상 모드 가져오기 (컬러/흑백/쿨톤/웜톤)
         color_mode = request.form.get('color_mode', 'color')
         print(f"Color mode: {color_mode}")
+
+        # 스타일 가져오기 (기본/애니메이션/실사화)
+        style = request.form.get('style', 'default')
+        print(f"Style: {style}")
 
         # 고유 해시 생성
         import hashlib
@@ -253,7 +266,7 @@ def generate_image():
         print("Processing with FAL AI nano-banana-pro/edit in background thread...")
         thread = threading.Thread(
             target=process_fal_ai_4_cut,
-            args=(image_data, unique_id, frame_color, layout, image_data2, color_mode),
+            args=(image_data, unique_id, frame_color, layout, image_data2, color_mode, style),
             daemon=True
         )
         thread.start()
@@ -270,13 +283,14 @@ def generate_image():
         traceback.print_exc()
         return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
-def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4', image_data2=None, color_mode='color'):
+def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4', image_data2=None, color_mode='color', style='default'):
     """FAL AI nano-banana-pro/edit로 AI4컷 생성"""
     try:
         user_state = get_user_state(unique_id)
         is_duo = image_data2 is not None
         color_mode_names = {'color': 'Color', 'bw': 'B&W', 'cool': 'Cool Tone', 'warm': 'Warm Tone'}
-        print(f"=== FAL AI {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}) ===")
+        style_names = {'default': 'Default', 'animation': 'Animation', 'realistic': 'Realistic'}
+        print(f"=== FAL AI {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}, style: {style_names.get(style, 'Default')}) ===")
 
         # 1. 첫 번째 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -322,7 +336,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
         print(f"Calling FAL AI with {len(image_urls)} images and prompt...")
 
         # 프롬프트 생성 (1인, 2인 동일 프롬프트 사용)
-        prompt = get_ai_4_cut_prompt(frame_color, layout, color_mode)
+        prompt = get_ai_4_cut_prompt(frame_color, layout, color_mode, style)
 
         # FAL AI nano-banana-pro/edit 호출
         handler = fal_client.submit(
