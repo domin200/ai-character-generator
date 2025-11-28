@@ -70,7 +70,7 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
     style_instructions = {
         'default': "",
         'animation': "IMPORTANT STYLE: Transform the person into 2D ANIME/ANIMATION style artwork. Convert to Japanese anime art style with cel-shading, big expressive eyes, and stylized features typical of anime characters.",
-        'realistic': "IMPORTANT STYLE: If the input image is an animated character or non-real person, transform them into REALISTIC PHOTOREALISTIC style. Make them look like a real human cosplaying the character, with realistic skin texture, lighting, and human features."
+        'realistic': "IMPORTANT STYLE: If the input image is an animated character or non-real person, transform them into REALISTIC PHOTOREALISTIC style. Make them look like a real human cosplaying the character, with realistic skin texture, lighting, and human features. If the character's nationality is not clearly identifiable, default to Korean person appearance."
     }
     style_instruction = style_instructions.get(style, "")
 
