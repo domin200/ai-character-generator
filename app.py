@@ -70,7 +70,9 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
     style_instructions = {
         'default': "",
         'animation': "IMPORTANT STYLE: Transform the person into 2D ANIME/ANIMATION style artwork. Convert to Japanese anime art style with cel-shading, big expressive eyes, and stylized features typical of anime characters.",
-        'realistic': "IMPORTANT STYLE: If the input image is an animated character or non-real person, transform them into REALISTIC PHOTOREALISTIC style. Make them look like a real human cosplaying the character, with realistic skin texture, lighting, and human features. If the character's nationality is not clearly identifiable, default to Korean person appearance."
+        'realistic': "IMPORTANT STYLE: If the input image is an animated character or non-real person, transform them into REALISTIC PHOTOREALISTIC style. Make them look like a real human cosplaying the character, with realistic skin texture, lighting, and human features. If the character's nationality is not clearly identifiable, default to Korean person appearance.",
+        'disney': "IMPORTANT STYLE: Transform the person into DISNEY/PIXAR 3D animation style. Apply the characteristic Disney look with big expressive eyes, smooth skin, stylized proportions, and the magical quality typical of Disney and Pixar animated movies.",
+        'ghibli': "IMPORTANT STYLE: Transform the person into STUDIO GHIBLI style artwork. Apply the distinctive Ghibli aesthetic with soft watercolor-like textures, gentle colors, dreamy atmosphere, and the hand-drawn warmth characteristic of Hayao Miyazaki films."
     }
     style_instruction = style_instructions.get(style, "")
 
@@ -289,7 +291,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
         user_state = get_user_state(unique_id)
         is_duo = image_data2 is not None
         color_mode_names = {'color': 'Color', 'bw': 'B&W', 'cool': 'Cool Tone', 'warm': 'Warm Tone'}
-        style_names = {'default': 'Default', 'animation': 'Animation', 'realistic': 'Realistic'}
+        style_names = {'default': 'Default', 'animation': 'Animation', 'realistic': 'Realistic', 'disney': 'Disney', 'ghibli': 'Ghibli'}
         print(f"=== FAL AI {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}, style: {style_names.get(style, 'Default')}) ===")
 
         # 1. 첫 번째 사용자 이미지 base64 변환
