@@ -61,7 +61,7 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
     color_mode_instructions = {
         'bw': "All photos must be in BLACK AND WHITE (grayscale/monochrome). No color in the photos.",
         'cool': "Apply COOL TONE styling: The person's skin should have a fair, pinkish-rosy undertone typical of cool skin tones. Add subtle blue-ish tint to the overall image. Skin looks best with silver/blue-based tones.",
-        'warm': "Apply WARM TONE styling: The person's skin should have a golden, peachy-yellow undertone typical of warm skin tones. Add subtle orange-ish tint to the overall image. Skin looks best with gold/yellow-based tones.",
+        'warm': "Apply SUBTLE WARM TONE styling: Add a very gentle, natural warm glow. Slightly enhance skin's healthy peachy-pink tones. Keep skin looking natural and healthy, NOT yellow or orange. Just a hint of warmth.",
         'color': ""
     }
     color_instruction = color_mode_instructions.get(color_mode, "")
