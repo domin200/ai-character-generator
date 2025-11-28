@@ -39,8 +39,8 @@ def clean_old_states():
     for uid in to_delete:
         del app_state[uid]
 
-# AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃 동적 생성)
-def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', style='default'):
+# AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃, 듀오 모드 동적 생성)
+def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', style='default', is_duo=False):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
@@ -78,6 +78,11 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
     }
     style_instruction = style_instructions.get(style, "")
 
+    # 듀오 모드 (두 명) 프롬프트
+    duo_instruction = ""
+    if is_duo:
+        duo_instruction = "IMPORTANT: Two people are provided in the input images. Generate photos featuring BOTH people together naturally in each frame. They should appear as friends, couple, or companions interacting naturally with each other."
+
     # 레이아웃별 프롬프트 생성
     if layout == '1x3':
         layout_instruction = "IMPORTANT: 3 images arranged in SINGLE COLUMN vertically (1x3 layout). NOT 2x2, NOT any other layout. Only vertical single column with 3 images."
@@ -100,6 +105,7 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
 
     return f"""Create an AI-4-cut photo strip. Full frame size {frame_size}.
 {layout_instruction}
+{duo_instruction}
 {image_count_text}, each with {aspect_ratio} with different natural poses and expressions.
 {style_instruction}
 {color_instruction}
@@ -346,8 +352,8 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
 
         print(f"Calling FAL AI with {len(image_urls)} images and prompt...")
 
-        # 프롬프트 생성 (1인, 2인 동일 프롬프트 사용)
-        prompt = get_ai_4_cut_prompt(frame_color, layout, color_mode, style)
+        # 프롬프트 생성 (듀오 모드 포함)
+        prompt = get_ai_4_cut_prompt(frame_color, layout, color_mode, style, is_duo)
 
         # FAL AI nano-banana-pro/edit 호출
         handler = fal_client.submit(
