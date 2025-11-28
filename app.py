@@ -40,7 +40,7 @@ def clean_old_states():
         del app_state[uid]
 
 # AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃 동적 생성)
-def get_ai_4_cut_prompt(frame_color='black', layout='1x4', is_bw=False):
+def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color'):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
@@ -57,8 +57,14 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', is_bw=False):
         }
         frame_instruction = color_map.get(frame_color, 'color #000000')
 
-    # 흑백 모드 설정
-    color_instruction = "All photos must be in BLACK AND WHITE (grayscale/monochrome). No color in the photos." if is_bw else ""
+    # 색상 모드 설정
+    color_mode_instructions = {
+        'bw': "All photos must be in BLACK AND WHITE (grayscale/monochrome). No color in the photos.",
+        'cool': "All photos must have COOL TONE color grading. Apply blue-ish, purple-ish cool color temperature. Enhance blues and cyans, reduce warm tones.",
+        'warm': "All photos must have WARM TONE color grading. Apply orange-ish, yellow-ish warm color temperature. Enhance reds, oranges and yellows for a cozy warm feeling.",
+        'color': ""
+    }
+    color_instruction = color_mode_instructions.get(color_mode, "")
 
     # 레이아웃별 프롬프트 생성
     if layout == '1x3':
@@ -269,8 +275,8 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
     try:
         user_state = get_user_state(unique_id)
         is_duo = image_data2 is not None
-        is_bw = color_mode == 'bw'
-        print(f"=== FAL AI {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}, color: {'B&W' if is_bw else 'Color'}) ===")
+        color_mode_names = {'color': 'Color', 'bw': 'B&W', 'cool': 'Cool Tone', 'warm': 'Warm Tone'}
+        print(f"=== FAL AI {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}) ===")
 
         # 1. 첫 번째 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -316,7 +322,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
         print(f"Calling FAL AI with {len(image_urls)} images and prompt...")
 
         # 프롬프트 생성 (1인, 2인 동일 프롬프트 사용)
-        prompt = get_ai_4_cut_prompt(frame_color, layout, is_bw)
+        prompt = get_ai_4_cut_prompt(frame_color, layout, color_mode)
 
         # FAL AI nano-banana-pro/edit 호출
         handler = fal_client.submit(
