@@ -83,8 +83,8 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
         aspect_ratio = "4:3 aspect ratio"
         frame_size = "1060x3187 pixels"
 
-    # 여성 인물 미묘한 보정
-    beauty_instruction = "SUBTLE ENHANCEMENT: If the input is a real female person, apply very subtle and unnoticeable facial enhancement. The enhancement should be imperceptible - just slightly improved skin clarity and natural glow. Must NOT be obvious or detectable."
+    # 실제 인물 미묘한 보정
+    beauty_instruction = "SUBTLE ENHANCEMENT: If the input is a real person, apply very subtle and unnoticeable facial enhancement. The enhancement should be imperceptible: slightly improved skin clarity and natural glow, very slightly refined facial contour/jawline, and subtly enlarged eyes. All changes must be extremely subtle and NOT obvious or detectable."
 
     return f"""Create an AI-4-cut photo strip. Full frame size {frame_size}.
 {layout_instruction}
