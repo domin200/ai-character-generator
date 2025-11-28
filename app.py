@@ -60,8 +60,8 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
     # 색상 모드 설정
     color_mode_instructions = {
         'bw': "All photos must be in BLACK AND WHITE (grayscale/monochrome). No color in the photos.",
-        'cool': "All photos must have COOL TONE color grading. Apply blue-ish, purple-ish cool color temperature. Enhance blues and cyans, reduce warm tones.",
-        'warm': "All photos must have WARM TONE color grading. Apply orange-ish, yellow-ish warm color temperature. Enhance reds, oranges and yellows for a cozy warm feeling.",
+        'cool': "All photos should have a SUBTLE COOL TONE color grading. Apply a gentle, mild blue-ish tint. Keep the effect natural and not too strong - just a hint of cool temperature.",
+        'warm': "All photos should have a SUBTLE WARM TONE color grading. Apply a gentle, mild orange-ish tint. Keep the effect natural and not too strong - just a hint of warm temperature.",
         'color': ""
     }
     color_instruction = color_mode_instructions.get(color_mode, "")
