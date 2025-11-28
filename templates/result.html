@@ -198,39 +198,89 @@
             padding: 8px;
             position: relative;
             overflow: hidden;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
         }
 
-        .skeleton-image {
+        .skeleton-item:hover {
+            border-color: rgba(0, 122, 255, 0.5);
+        }
+
+        .skeleton-item.selected {
+            border-color: #007AFF;
+            box-shadow: 0 0 12px rgba(0, 122, 255, 0.4);
+        }
+
+        .image-container {
+            position: relative;
             width: 100%;
             aspect-ratio: 1 / 3;
-            background: linear-gradient(90deg, #3c3c3e 25%, #4a4a4c 50%, #3c3c3e 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
             border-radius: 4px;
+            overflow: hidden;
+            background: #222;
         }
 
-        @keyframes shimmer {
+        /* 로딩 중 스켈레톤 */
+        .image-skeleton {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(120deg, #222 0%, #3a3a3c 40%, #222 80%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s ease-in-out infinite;
+            filter: blur(8px);
+            opacity: 1;
+            transition: opacity 0.4s ease;
+        }
+
+        .image-skeleton.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 실제 결과 이미지 */
+        .image-real {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            filter: blur(20px);
+            transform: scale(1.05);
+            transition:
+                opacity 0.5s ease-out,
+                filter 0.7s ease-out,
+                transform 0.7s ease-out;
+        }
+
+        .image-real.loaded {
+            opacity: 1;
+            filter: blur(0);
+            transform: scale(1.0);
+        }
+
+        @keyframes skeleton-shimmer {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
 
         .skeleton-label {
             text-align: center;
-            margin-top: 12px;
+            margin-bottom: 12px;
             font-size: 0.875rem;
             color: rgba(255, 255, 255, 0.5);
         }
 
         .loading-info {
             text-align: center;
-            margin-top: 24px;
+            margin-bottom: 24px;
             color: rgba(255, 255, 255, 0.85);
         }
 
         .loading-info p {
             font-size: 0.9375rem;
             font-weight: 500;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .loading-info small {
@@ -238,9 +288,13 @@
             font-size: 0.8125rem;
         }
 
+        .loading-logo-container {
+            text-align: center;
+            margin-top: 24px;
+        }
+
         .loading-logo {
-            display: block;
-            margin-top: 20px;
+            display: inline-block;
             opacity: 0.6;
             transition: opacity 0.2s;
         }
@@ -259,7 +313,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .skeleton-image {
+            .image-container {
                 aspect-ratio: 1 / 2.5;
             }
         }
@@ -441,19 +495,27 @@
             <div class="result-image-container">
                 <h3>AI4컷 결과 <small style="font-weight: 400; opacity: 0.7;">(다운로드할 이미지를 선택하세요)</small></h3>
                 <div id="loading-container">
-                    <div class="skeleton-container">
-                        <div class="skeleton-item">
-                            <div class="skeleton-image"></div>
-                            <div class="skeleton-label">이미지 1</div>
-                        </div>
-                        <div class="skeleton-item">
-                            <div class="skeleton-image"></div>
-                            <div class="skeleton-label">이미지 2</div>
-                        </div>
-                    </div>
-                    <div class="loading-info">
+                    <div class="loading-info" id="loading-info">
                         <p>AI4컷 생성 중...</p>
                         <small>약 1~3분 정도 소요됩니다</small>
+                    </div>
+                    <div class="skeleton-container" id="skeleton-grid">
+                        <div class="skeleton-item" id="skeleton-1">
+                            <div class="skeleton-label">이미지 1</div>
+                            <div class="image-container">
+                                <div class="image-skeleton" id="skeleton-bg-1"></div>
+                                <img class="image-real" id="result-img-1" src="" alt="AI4컷 결과 1">
+                            </div>
+                        </div>
+                        <div class="skeleton-item" id="skeleton-2">
+                            <div class="skeleton-label">이미지 2</div>
+                            <div class="image-container">
+                                <div class="image-skeleton" id="skeleton-bg-2"></div>
+                                <img class="image-real" id="result-img-2" src="" alt="AI4컷 결과 2">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="loading-logo-container" id="loading-logo-container">
                         <a href="https://mirai.fun/" target="_blank" rel="noopener noreferrer" class="loading-logo">
                             <img src="https://mirai.fun/logo.svg" alt="MIRAI">
                         </a>
@@ -630,22 +692,49 @@
         // 페이지 로드 시 실행
         init();
 
-        // 결과 표시 함수 (여러 이미지)
+        // 결과 표시 함수 (서서히 나타나는 효과)
         function displayResults(imageUrls) {
-            const loadingContainer = document.getElementById('loading-container');
-            const container = document.getElementById('result-container');
+            const loadingInfo = document.getElementById('loading-info');
+            const loadingLogoContainer = document.getElementById('loading-logo-container');
             const buttonGroup = document.getElementById('button-group');
 
-            // 로딩 숨기고 결과 표시
-            loadingContainer.style.display = 'none';
-            container.style.display = 'grid';
+            // 로딩 정보 및 로고 숨기기
+            loadingInfo.style.display = 'none';
+            loadingLogoContainer.style.display = 'none';
 
-            container.innerHTML = imageUrls.map((url, index) => `
-                <div class="image-item ${index === 0 ? 'selected' : ''}" data-index="${index}" onclick="selectImage(${index})">
-                    <img src="${url}" alt="AI4컷 결과 ${index + 1}">
-                </div>
-            `).join('');
+            // 각 이미지를 스켈레톤 위에 표시
+            imageUrls.forEach((url, index) => {
+                const imgElement = document.getElementById(`result-img-${index + 1}`);
+                const skeletonBg = document.getElementById(`skeleton-bg-${index + 1}`);
+                const skeletonItem = document.getElementById(`skeleton-${index + 1}`);
 
+                if (imgElement && skeletonBg) {
+                    // 이미지 소스 설정
+                    imgElement.src = url;
+
+                    // 이미지 로드 완료 시 효과 적용
+                    imgElement.onload = function() {
+                        // 스켈레톤 숨기기
+                        skeletonBg.classList.add('hidden');
+                        // 이미지 서서히 나타나기
+                        imgElement.classList.add('loaded');
+                    };
+
+                    // 클릭 이벤트 추가
+                    if (skeletonItem) {
+                        skeletonItem.style.cursor = 'pointer';
+                        skeletonItem.onclick = function() {
+                            selectImage(index);
+                        };
+                        // 첫 번째 이미지 선택 표시
+                        if (index === 0) {
+                            skeletonItem.classList.add('selected');
+                        }
+                    }
+                }
+            });
+
+            // 버튼 표시
             buttonGroup.style.display = 'flex';
         }
 
@@ -653,8 +742,8 @@
         function selectImage(index) {
             selectedImageIndex = index;
 
-            // 선택 상태 업데이트
-            document.querySelectorAll('.image-item').forEach((item, i) => {
+            // 선택 상태 업데이트 (skeleton-item 사용)
+            document.querySelectorAll('.skeleton-item').forEach((item, i) => {
                 if (i === index) {
                     item.classList.add('selected');
                 } else {
