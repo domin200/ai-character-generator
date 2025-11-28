@@ -61,7 +61,7 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
     # 듀오 모드 (두 명) 프롬프트
     duo_instruction = ""
     if is_duo:
-        duo_instruction = "IMPORTANT: Two people are provided in the input images. Generate photos featuring BOTH people together naturally in each frame. They should appear as friends, couple, or companions interacting naturally with each other."
+        duo_instruction = "IMPORTANT: Two images are provided. First, determine if they are the SAME person or TWO DIFFERENT people. If SAME PERSON: use both images as reference for that one person's appearance from different angles, generate photos of that SINGLE person only. If TWO DIFFERENT PEOPLE: generate photos featuring BOTH people together naturally in each frame as friends, couple, or companions interacting with each other."
 
     # 레이아웃별 프롬프트 생성
     if layout == '1x3':
