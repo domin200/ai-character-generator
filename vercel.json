@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python@4"
+      "use": "@vercel/python@4",
+      "config": {
+        "maxDuration": 300
+      }
     },
     {
       "src": "static/**",

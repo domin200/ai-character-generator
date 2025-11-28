@@ -3,8 +3,8 @@ import base64
 import os
 import fal_client
 from dotenv import load_dotenv
-import threading
 import time
+import requests
 
 # .env 파일 로드
 load_dotenv()
@@ -21,27 +21,8 @@ else:
     if not os.getenv('FAL_KEY'):
         print("WARNING: FAL_KEY not found in environment")
 
-# 전역 상태 저장소 (각 사용자별로 unique_id로 분리)
-app_state = {}
-
-def get_user_state(unique_id):
-    """사용자별 상태 가져오기"""
-    if unique_id not in app_state:
-        app_state[unique_id] = {}
-    return app_state[unique_id]
-
-def clean_old_states():
-    """1시간 이상 된 상태 삭제"""
-    current_time = time.time()
-    to_delete = []
-    for uid, state in app_state.items():
-        if state.get('processing_timestamp', 0) < current_time - 3600:
-            to_delete.append(uid)
-    for uid in to_delete:
-        del app_state[uid]
-
-# AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃 동적 생성)
-def get_ai_4_cut_prompt(frame_color='black', layout='1x4', is_bw=False):
+# AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃, 색상모드, 스타일 동적 생성)
+def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', style='default'):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
@@ -56,8 +37,24 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', is_bw=False):
         }
         frame_instruction = color_map.get(frame_color, 'color #000000')
 
-    # 흑백 모드 설정
-    color_instruction = "All photos must be in BLACK AND WHITE (grayscale/monochrome). No color in the photos." if is_bw else ""
+    # 색상 모드 설정
+    color_mode_instructions = {
+        'bw': "All photos must be in BLACK AND WHITE (grayscale/monochrome). No color in the photos.",
+        'cool': "Apply COOL TONE styling: The person's skin should have a fair, pinkish-rosy undertone typical of cool skin tones. Add subtle blue-ish tint to the overall image. Skin looks best with silver/blue-based tones.",
+        'warm': "Apply SUBTLE WARM TONE styling: Add a very gentle, natural warm glow. Slightly enhance skin's healthy peachy-pink tones. Keep skin looking natural and healthy, NOT yellow or orange. Just a hint of warmth.",
+        'color': ""
+    }
+    color_instruction = color_mode_instructions.get(color_mode, "")
+
+    # 스타일 설정
+    style_instructions = {
+        'default': "",
+        'animation': "IMPORTANT STYLE: Transform the person into 2D ANIME/ANIMATION style artwork. Convert to Japanese anime art style with cel-shading, big expressive eyes, and stylized features typical of anime characters.",
+        'realistic': "IMPORTANT STYLE: If the input image is an animated character or non-real person, transform them into REALISTIC PHOTOREALISTIC style. Make them look like a real human cosplaying the character, with realistic skin texture, lighting, and human features. If the character's nationality is not clearly identifiable, default to Korean person appearance.",
+        'disney': "IMPORTANT STYLE: Transform the person into DISNEY/PIXAR 3D animation style. Apply the characteristic Disney look with big expressive eyes, smooth skin, stylized proportions, and the magical quality typical of Disney and Pixar animated movies.",
+        'ghibli': "IMPORTANT STYLE: Apply STUDIO GHIBLI art style to the person. Convert to 2D hand-drawn animation style like Ghibli films. Keep the same person, pose and expression but render in Ghibli's distinctive drawing style with soft lines and gentle colors."
+    }
+    style_instruction = style_instructions.get(style, "")
 
     # 레이아웃별 프롬프트 생성
     if layout == '1x3':
@@ -82,6 +79,7 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', is_bw=False):
     return f"""Create an AI-4-cut photo strip. Full frame size {frame_size}.
 {layout_instruction}
 {image_count_text}, each with {aspect_ratio} with different natural poses and expressions.
+{style_instruction}
 {color_instruction}
 All frame with {frame_instruction}. No text on top of frame. Top margin should be narrow, similar to side margins, with images positioned accordingly.
 Layout structure: {layout_structure}
@@ -104,33 +102,27 @@ def og_image():
     og_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static_image', 'og-image.png')
     return send_file(og_path, mimetype='image/png')
 
-@app.route('/api/check_progress')
-def check_progress():
-    unique_id = request.args.get('id')
+@app.route('/robots.txt')
+def robots():
+    from flask import send_file
+    robots_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'robots.txt')
+    return send_file(robots_path, mimetype='text/plain')
 
-    if not unique_id:
-        return jsonify({'error': 'ID가 필요합니다'}), 400
+@app.route('/sitemap.xml')
+def sitemap():
+    from flask import send_file
+    sitemap_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'sitemap.xml')
+    return send_file(sitemap_path, mimetype='application/xml')
 
-    user_state = get_user_state(unique_id)
-
-    result = {
-        'result_ready': user_state.get('result_ready', False),
-        'result_url': user_state.get('result_url'),
-        'result_urls': user_state.get('result_urls', []),
-        'result_filename': user_state.get('result_filename', 'ai_4_cut.png'),
-        'processing_started': user_state.get('processing_started', False),
-        'processing_timestamp': user_state.get('processing_timestamp'),
-        'current_image_hash': user_state.get('current_image_hash'),
-        'current_processing_id': user_state.get('current_processing_id')
-    }
-
-    if user_state.get('error'):
-        result['error'] = user_state.get('error')
-
-    return jsonify(result)
+@app.route('/ads.txt')
+def ads_txt():
+    from flask import send_file
+    ads_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'ads.txt')
+    return send_file(ads_path, mimetype='text/plain')
 
 @app.route('/generate', methods=['POST'])
 def generate_image():
+    """동기 방식으로 AI4컷 생성 - Vercel serverless 환경에서 작동"""
     try:
         # 첫 번째 이미지 파일 읽기 (필수)
         uploaded_file = request.files.get('image')
@@ -165,58 +157,18 @@ def generate_image():
         layout = request.form.get('layout', '1x4')
         print(f"Layout: {layout}")
 
-        # 색상 모드 가져오기 (컬러/흑백)
+        # 색상 모드 가져오기 (컬러/흑백/쿨톤/웜톤)
         color_mode = request.form.get('color_mode', 'color')
         print(f"Color mode: {color_mode}")
 
-        # 고유 해시 생성
-        import hashlib
-        data_hash = hashlib.sha256(image_data).hexdigest()[:12]
-        unique_id = f"{data_hash}_{int(time.time() * 1000)}"
-
-        # 오래된 상태 정리
-        clean_old_states()
-
-        # 사용자별 상태 초기화
-        user_state = get_user_state(unique_id)
-        user_state.clear()
-        user_state['result_ready'] = False
-        user_state['processing_started'] = True
-        user_state['processing_timestamp'] = time.time()
-        user_state['current_image_hash'] = data_hash
-        user_state['current_processing_id'] = unique_id
+        # 스타일 가져오기 (기본/애니메이션/실사화/디즈니/지브리)
+        style = request.form.get('style', 'default')
+        print(f"Style: {style}")
 
         is_duo = image_data2 is not None
-        print(f"=== STARTING {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} ===")
-
-        # FAL AI로 AI4컷 생성 (백그라운드 스레드에서 실행)
-        print("Processing with FAL AI nano-banana-pro/edit in background thread...")
-        thread = threading.Thread(
-            target=process_fal_ai_4_cut,
-            args=(image_data, unique_id, frame_color, layout, image_data2, color_mode),
-            daemon=True
-        )
-        thread.start()
-
-        return jsonify({
-            'success': True,
-            'message': 'AI4컷 생성을 시작했습니다!',
-            'id': unique_id
-        })
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
-
-def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4', image_data2=None, color_mode='color'):
-    """FAL AI nano-banana-pro/edit로 AI4컷 생성"""
-    try:
-        user_state = get_user_state(unique_id)
-        is_duo = image_data2 is not None
-        is_bw = color_mode == 'bw'
-        print(f"=== FAL AI {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}, color: {'B&W' if is_bw else 'Color'}) ===")
+        color_mode_names = {'color': 'Color', 'bw': 'B&W', 'cool': 'Cool Tone', 'warm': 'Warm Tone'}
+        style_names = {'default': 'Default', 'animation': 'Animation', 'realistic': 'Realistic', 'disney': 'Disney', 'ghibli': 'Ghibli'}
+        print(f"=== STARTING {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}, style: {style_names.get(style, 'Default')}) ===")
 
         # 1. 첫 번째 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -261,10 +213,10 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
 
         print(f"Calling FAL AI with {len(image_urls)} images and prompt...")
 
-        # 프롬프트 생성
-        prompt = get_ai_4_cut_prompt(frame_color, layout, is_bw)
+        # 프롬프트 생성 (색상 모드, 스타일 포함)
+        prompt = get_ai_4_cut_prompt(frame_color, layout, color_mode, style)
 
-        # FAL AI nano-banana-pro/edit 호출
+        # FAL AI nano-banana-pro/edit 호출 (동기 방식)
         handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
@@ -302,8 +254,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
             if result_urls:
                 print(f"AI-4-cut generated: {len(result_urls)} images")
 
-                # 모든 이미지를 base64로 변환하여 저장
-                import requests
+                # 모든 이미지를 base64로 변환하여 직접 반환
                 result_data_uris = []
                 for i, url in enumerate(result_urls):
                     response = requests.get(url)
@@ -316,25 +267,28 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
                         print(f"Failed to download image {i+1}: {response.status_code}")
 
                 if result_data_uris:
-                    user_state['result_urls'] = result_data_uris
-                    user_state['result_url'] = result_data_uris[0]
-                    user_state['result_filename'] = 'ai_4_cut.png'
-                    user_state['result_ready'] = True
+                    print(f"✅ AI-4-cut generation completed successfully ({len(result_data_uris)} images)")
 
-                    print(f"✅ AI-4-cut generation completed successfully for {unique_id} ({len(result_data_uris)} images)")
+                    # 결과를 직접 반환 (상태 저장 없이)
+                    return jsonify({
+                        'success': True,
+                        'result_ready': True,
+                        'result_urls': result_data_uris,
+                        'result_url': result_data_uris[0],
+                        'result_filename': 'ai_4_cut.png'
+                    })
                 else:
-                    raise Exception("Failed to download any result images")
+                    return jsonify({'error': '결과 이미지를 다운로드할 수 없습니다.'}), 500
             else:
-                raise Exception("No image URL in FAL AI response")
+                return jsonify({'error': 'AI 응답에서 이미지를 찾을 수 없습니다.'}), 500
         else:
-            raise Exception("Invalid response from FAL AI")
+            return jsonify({'error': 'AI 서버에서 유효하지 않은 응답을 받았습니다.'}), 500
 
     except Exception as e:
-        print(f"=== FAL AI ERROR for {unique_id} ===: {str(e)}")
+        print(f"Error: {str(e)}")
         import traceback
         traceback.print_exc()
-        user_state['error'] = str(e)
-        user_state['result_ready'] = False
+        return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
 # Vercel 서버리스 함수
 application = app

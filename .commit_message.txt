@@ -1,1 +1,1 @@
-🎯 Google AdSense ads.txt 파일 추가
+🔧 Vercel serverless 환경 대응 - 동기 방식으로 변경하여 결과 표시 문제 수정
