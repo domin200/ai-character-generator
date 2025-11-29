@@ -245,6 +245,12 @@ def og_image():
     og_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static_image', 'og-image.png')
     return send_file(og_path, mimetype='image/png')
 
+@app.route('/favicon.ico')
+def favicon():
+    from flask import send_file
+    ico_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ico.ico')
+    return send_file(ico_path, mimetype='image/x-icon')
+
 @app.route('/robots.txt')
 def robots():
     from flask import send_file
