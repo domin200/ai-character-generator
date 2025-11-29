@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import base64
-import time
-import fal_client
 import os
+import fal_client
 from dotenv import load_dotenv
-import threading
+import time
+import requests
 
 # .env 파일 로드
 load_dotenv()
@@ -17,39 +17,18 @@ FAL_KEY = os.getenv('FAL_KEY')
 if FAL_KEY:
     os.environ['FAL_KEY'] = FAL_KEY
 else:
-    raise ValueError("FAL_KEY environment variable is not set. Please check your .env file.")
+    if not os.getenv('FAL_KEY'):
+        print("WARNING: FAL_KEY not found in environment")
 
-# 전역 상태 저장소 (각 사용자별로 unique_id로 분리)
-app_state = {}
-
-def get_user_state(unique_id):
-    """사용자별 상태 가져오기"""
-    if unique_id not in app_state:
-        app_state[unique_id] = {}
-    return app_state[unique_id]
-
-def clean_old_states():
-    """1시간 이상 된 상태 삭제"""
-    import time
-    current_time = time.time()
-    to_delete = []
-    for uid, state in app_state.items():
-        if state.get('processing_timestamp', 0) < current_time - 3600:
-            to_delete.append(uid)
-    for uid in to_delete:
-        del app_state[uid]
-
-# AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃, 듀오 모드 동적 생성)
+# AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃, 색상모드, 스타일, 듀오 모드 동적 생성)
 def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', style='default', is_duo=False):
     from datetime import datetime
     current_date = datetime.now().strftime('%Y.%m.%d')
 
     # 프레임 색상 (hex 코드 또는 기본 색상 이름)
     if frame_color.startswith('#'):
-        # Hex 코드인 경우 그대로 사용
         frame_instruction = f"color {frame_color}"
     else:
-        # 기존 호환성을 위한 색상 이름 매핑
         color_map = {
             'black': 'color #000000',
             'gray': 'color #808080',
@@ -122,8 +101,6 @@ Date should be 10% of logo size, small. Do not include 'AI4컷' text.
 QR code should be inserted small and naturally at the bottom right corner of the frame (to the right of the date),
 half the size of the logo, as small as possible while maintaining QR functionality."""
 
-# 웹 배포용 - 로컬 저장 제거
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -135,93 +112,30 @@ def result():
 @app.route('/og-image.png')
 def og_image():
     from flask import send_file
-    import os
     og_path = os.path.join(os.path.dirname(__file__), 'static_image', 'og-image.png')
     return send_file(og_path, mimetype='image/png')
 
 @app.route('/robots.txt')
 def robots():
     from flask import send_file
-    import os
     robots_path = os.path.join(os.path.dirname(__file__), 'static', 'robots.txt')
     return send_file(robots_path, mimetype='text/plain')
 
 @app.route('/sitemap.xml')
 def sitemap():
     from flask import send_file
-    import os
     sitemap_path = os.path.join(os.path.dirname(__file__), 'static', 'sitemap.xml')
     return send_file(sitemap_path, mimetype='application/xml')
 
 @app.route('/ads.txt')
 def ads_txt():
     from flask import send_file
-    import os
     ads_path = os.path.join(os.path.dirname(__file__), 'static', 'ads.txt')
     return send_file(ads_path, mimetype='text/plain')
 
-# 웹 배포용 - 로컬 파일 서빙 제거
-
-@app.route('/api/check_progress')
-def check_progress():
-    # unique_id를 쿼리 파라미터로 받기
-    unique_id = request.args.get('id')
-
-    if not unique_id:
-        return jsonify({'error': 'ID가 필요합니다'}), 400
-
-    # 해당 사용자의 상태만 가져오기
-    user_state = get_user_state(unique_id)
-
-    result = {
-        'result_ready': user_state.get('result_ready', False),
-        'result_url': user_state.get('result_url'),
-        'result_urls': user_state.get('result_urls', []),
-        'result_filename': user_state.get('result_filename', 'ai_4_cut.png'),
-        'processing_started': user_state.get('processing_started', False),
-        'processing_timestamp': user_state.get('processing_timestamp'),
-        'current_image_hash': user_state.get('current_image_hash'),
-        'current_processing_id': user_state.get('current_processing_id')
-    }
-
-    # 에러 정보 추가
-    if user_state.get('error'):
-        result['error'] = user_state.get('error')
-
-    return jsonify(result)
-
-@app.route('/reset_on_upload', methods=['POST'])
-def reset_on_upload():
-    """이미지 업로드시 기존 결과 초기화"""
-    try:
-        unique_id = request.json.get('id') if request.json else None
-
-        if not unique_id:
-            return jsonify({'error': 'ID가 필요합니다'}), 400
-
-        print(f"=== IMAGE UPLOAD RESET for {unique_id}: CLEARING PREVIOUS RESULTS ===")
-
-        # 해당 사용자의 결과만 초기화
-        user_state = get_user_state(unique_id)
-        user_state['result_ready'] = False
-        user_state.pop('result_url', None)
-        user_state.pop('error', None)
-        user_state['processing_started'] = False
-        user_state.pop('processing_timestamp', None)
-
-        print(f"✅ Previous results cleared for user {unique_id}")
-
-        return jsonify({
-            'success': True,
-            'message': '새로운 이미지 업로드를 위해 이전 결과를 초기화했습니다.'
-        })
-
-    except Exception as e:
-        print(f"Upload reset error: {str(e)}")
-        return jsonify({'error': f'초기화 중 오류가 발생했습니다: {str(e)}'}), 500
-
 @app.route('/generate', methods=['POST'])
 def generate_image():
+    """동기 방식으로 AI4컷 생성"""
     try:
         # 첫 번째 이미지 파일 읽기 (필수)
         uploaded_file = request.files.get('image')
@@ -229,7 +143,6 @@ def generate_image():
         if not uploaded_file or not uploaded_file.filename:
             return jsonify({'error': '이미지를 업로드해주세요.'}), 400
 
-        # 이미지 데이터 읽기
         uploaded_file.seek(0, 0)
         image_data = uploaded_file.read()
 
@@ -261,59 +174,14 @@ def generate_image():
         color_mode = request.form.get('color_mode', 'color')
         print(f"Color mode: {color_mode}")
 
-        # 스타일 가져오기 (기본/애니메이션/실사화)
+        # 스타일 가져오기 (기본/애니메이션/실사화/디즈니/지브리)
         style = request.form.get('style', 'default')
         print(f"Style: {style}")
 
-        # 고유 해시 생성
-        import hashlib
-        data_hash = hashlib.sha256(image_data).hexdigest()[:12]
-        unique_id = f"{data_hash}_{int(time.time() * 1000)}"
-
-        # 오래된 상태 정리
-        clean_old_states()
-
-        # 사용자별 상태 초기화
-        user_state = get_user_state(unique_id)
-        user_state.clear()
-        user_state['result_ready'] = False
-        user_state['processing_started'] = True
-        user_state['processing_timestamp'] = time.time()
-        user_state['current_image_hash'] = data_hash
-        user_state['current_processing_id'] = unique_id
-
-        is_duo = image_data2 is not None
-        print(f"=== STARTING {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} ===")
-
-        # FAL AI로 AI4컷 생성 (백그라운드 스레드에서 실행)
-        print("Processing with FAL AI nano-banana-pro/edit in background thread...")
-        thread = threading.Thread(
-            target=process_fal_ai_4_cut,
-            args=(image_data, unique_id, frame_color, layout, image_data2, color_mode, style),
-            daemon=True
-        )
-        thread.start()
-
-        return jsonify({
-            'success': True,
-            'message': 'AI4컷 생성을 시작했습니다!',
-            'id': unique_id
-        })
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
-
-def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4', image_data2=None, color_mode='color', style='default'):
-    """FAL AI nano-banana-pro/edit로 AI4컷 생성"""
-    try:
-        user_state = get_user_state(unique_id)
         is_duo = image_data2 is not None
         color_mode_names = {'color': 'Color', 'bw': 'B&W', 'cool': 'Cool Tone', 'warm': 'Warm Tone'}
-        style_names = {'default': 'Default', 'animation': 'Animation', 'realistic': 'Realistic', 'disney': 'Disney', 'ghibli': 'Ghibli'}
-        print(f"=== FAL AI {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION for {unique_id} (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}, style: {style_names.get(style, 'Default')}) ===")
+        style_names = {'default': 'Default', 'animation': 'Animation', 'realistic': 'Realistic', 'disney': 'Disney', 'ghibli': 'Ghibli', 'baby': 'Baby', 'old': 'Old', 'studio': 'Studio', 'iphone': 'iPhone'}
+        print(f"=== STARTING {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}, style: {style_names.get(style, 'Default')}) ===")
 
         # 1. 첫 번째 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
@@ -324,7 +192,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
         user_image_uri = f"data:{mime_type};base64,{user_image_base64}"
         print(f"User image 1 prepared: {len(image_data)} bytes")
 
-        # 이미지 URL 리스트 (사용자 이미지들)
+        # 이미지 URL 리스트
         image_urls = [user_image_uri]
 
         # 2. 두 번째 사용자 이미지 (있는 경우)
@@ -358,10 +226,10 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
 
         print(f"Calling FAL AI with {len(image_urls)} images and prompt...")
 
-        # 프롬프트 생성 (듀오 모드 포함)
+        # 프롬프트 생성 (색상 모드, 스타일, 듀오 모드 포함)
         prompt = get_ai_4_cut_prompt(frame_color, layout, color_mode, style, is_duo)
 
-        # FAL AI nano-banana-pro/edit 호출
+        # FAL AI nano-banana-pro/edit 호출 (동기 방식)
         handler = fal_client.submit(
             "fal-ai/nano-banana-pro/edit",
             arguments={
@@ -379,7 +247,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
         if result:
             result_data = result
 
-            # 이미지 URL 추출 (FAL AI는 여러 형식으로 반환 가능)
+            # 이미지 URL 추출
             result_urls = []
 
             if 'images' in result_data and len(result_data['images']) > 0:
@@ -399,8 +267,7 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
             if result_urls:
                 print(f"AI-4-cut generated: {len(result_urls)} images")
 
-                # 모든 이미지를 base64로 변환하여 저장
-                import requests
+                # 모든 이미지를 base64로 변환하여 직접 반환
                 result_data_uris = []
                 for i, url in enumerate(result_urls):
                     response = requests.get(url)
@@ -413,28 +280,28 @@ def process_fal_ai_4_cut(image_data, unique_id, frame_color='black', layout='1x4
                         print(f"Failed to download image {i+1}: {response.status_code}")
 
                 if result_data_uris:
-                    user_state['result_urls'] = result_data_uris
-                    user_state['result_url'] = result_data_uris[0]  # 호환성을 위해 첫번째 이미지
-                    user_state['result_filename'] = 'ai_4_cut.png'
-                    user_state['result_ready'] = True
+                    print(f"✅ AI-4-cut generation completed successfully ({len(result_data_uris)} images)")
 
-                    print(f"✅ AI-4-cut generation completed successfully for {unique_id} ({len(result_data_uris)} images)")
+                    # 결과를 직접 반환 (상태 저장 없이)
+                    return jsonify({
+                        'success': True,
+                        'result_ready': True,
+                        'result_urls': result_data_uris,
+                        'result_url': result_data_uris[0],
+                        'result_filename': 'ai_4_cut.png'
+                    })
                 else:
-                    raise Exception("Failed to download any result images")
+                    return jsonify({'error': '결과 이미지를 다운로드할 수 없습니다.'}), 500
             else:
-                raise Exception("No image URL in FAL AI response")
+                return jsonify({'error': 'AI 응답에서 이미지를 찾을 수 없습니다.'}), 500
         else:
-            raise Exception("Invalid response from FAL AI")
+            return jsonify({'error': 'AI 서버에서 유효하지 않은 응답을 받았습니다.'}), 500
 
     except Exception as e:
-        print(f"=== FAL AI ERROR for {unique_id} ===: {str(e)}")
+        print(f"Error: {str(e)}")
         import traceback
         traceback.print_exc()
-        user_state['error'] = str(e)
-        user_state['result_ready'] = False
+        return jsonify({'error': f'오류가 발생했습니다: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002, threaded=True)
-
-# Vercel 배포를 위한 앱 객체 노출
-application = app
+    app.run(debug=True, host='0.0.0.0', port=5002)
