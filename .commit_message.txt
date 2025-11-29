@@ -1,1 +1,1 @@
-🖼️ 하나의 gallery 레코드에 여러 이미지(image_urls) 저장
+📤 공유하기 버튼에 Web Share API 적용
