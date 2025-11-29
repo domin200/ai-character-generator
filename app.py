@@ -35,10 +35,31 @@ if SUPABASE_URL and SUPABASE_KEY:
 else:
     print("⚠️ Supabase credentials not found")
 
-def save_image_to_supabase(image_data, layout, style, color_mode):
-    """Supabase Storage에 이미지 저장 및 갤러리 등록, gallery_id 반환"""
+def create_gallery_placeholder(layout, style, color_mode):
+    """갤러리 레코드를 미리 생성하고 gallery_id 반환 (이미지 URL은 나중에 업데이트)"""
     if not supabase_client:
-        return None, None
+        return None
+
+    try:
+        gallery_data = {
+            'image_url': None,  # 나중에 업데이트
+            'layout': layout,
+            'style': style,
+            'color_mode': color_mode,
+            'is_public': True
+        }
+        result = supabase_client.table('gallery').insert(gallery_data).execute()
+        gallery_id = result.data[0]['id'] if result.data else None
+        print(f"✅ Gallery placeholder created: {gallery_id}")
+        return gallery_id
+    except Exception as e:
+        print(f"❌ Gallery placeholder error: {e}")
+        return None
+
+def update_gallery_with_image(gallery_id, image_data):
+    """생성 완료 후 gallery 레코드에 이미지 URL 업데이트"""
+    if not supabase_client or not gallery_id:
+        return None
 
     try:
         # 1. Storage에 이미지 저장
@@ -60,22 +81,14 @@ def save_image_to_supabase(image_data, layout, style, color_mode):
         image_url = f"{SUPABASE_URL}/storage/v1/object/public/ai4cut-images/{filename}"
         print(f"✅ Image saved to Supabase: {image_url}")
 
-        # 2. 갤러리 테이블에 저장
-        gallery_data = {
-            'image_url': image_url,
-            'layout': layout,
-            'style': style,
-            'color_mode': color_mode,
-            'is_public': True
-        }
-        result = supabase_client.table('gallery').insert(gallery_data).execute()
-        gallery_id = result.data[0]['id'] if result.data else None
-        print(f"✅ Gallery entry created: {gallery_id}")
+        # 2. 갤러리 레코드 업데이트
+        supabase_client.table('gallery').update({'image_url': image_url}).eq('id', gallery_id).execute()
+        print(f"✅ Gallery updated: {gallery_id}")
 
-        return image_url, gallery_id
+        return image_url
     except Exception as e:
-        print(f"❌ Supabase save error: {e}")
-        return None, None
+        print(f"❌ Gallery update error: {e}")
+        return None
 
 def save_stats_to_supabase(layout, style, color_mode, is_duo, image_count):
     """Supabase에 생성 통계 기록 (요청당 1회)"""
@@ -281,6 +294,16 @@ def generate_image():
         style_names = {'default': 'Default', 'animation': 'Animation', 'realistic': 'Realistic', 'disney': 'Disney', 'ghibli': 'Ghibli', 'baby': 'Baby', 'old': 'Old', 'studio': 'Studio', 'iphone': 'iPhone'}
         print(f"=== STARTING {'DUO' if is_duo else 'SOLO'} AI-4-CUT GENERATION (frame: {frame_color}, layout: {layout}, color: {color_mode_names.get(color_mode, 'Color')}, style: {style_names.get(style, 'Default')}) ===")
 
+        # 미리 gallery placeholder 생성 (2개 이미지용)
+        gallery_ids = []
+        share_urls = []
+        for i in range(2):  # 항상 2개 이미지 생성
+            gallery_id = create_gallery_placeholder(layout, style, color_mode)
+            if gallery_id:
+                gallery_ids.append(gallery_id)
+                share_urls.append(f"/r/{gallery_id}")
+        print(f"✅ Gallery placeholders created: {gallery_ids}")
+
         # 1. 첫 번째 사용자 이미지 base64 변환
         mime_type = 'image/jpeg'
         if image_data[:4] == b'\x89PNG':
@@ -380,20 +403,18 @@ def generate_image():
                 if result_data_uris:
                     print(f"✅ AI-4-cut generation completed successfully ({len(result_data_uris)} images)")
 
-                    # Supabase에 저장 및 share_urls 수집
-                    share_urls = []
+                    # Supabase에 이미지 업데이트
                     try:
                         # 통계는 요청당 1회만 기록
                         save_stats_to_supabase(layout, style, color_mode, is_duo, len(result_data_uris))
 
-                        # 모든 이미지를 Storage + 갤러리에 저장
+                        # 미리 생성한 gallery에 이미지 업데이트
                         for i, img_data in enumerate(result_data_uris):
-                            image_url, gallery_id = save_image_to_supabase(img_data, layout, style, color_mode)
-                            if gallery_id:
-                                share_urls.append(f"/r/{gallery_id}")
-                            print(f"✅ Image {i+1} saved to Supabase (gallery_id: {gallery_id})")
+                            if i < len(gallery_ids):
+                                update_gallery_with_image(gallery_ids[i], img_data)
+                                print(f"✅ Image {i+1} updated in gallery: {gallery_ids[i]}")
                     except Exception as e:
-                        print(f"⚠️ Supabase save failed (non-blocking): {e}")
+                        print(f"⚠️ Supabase update failed (non-blocking): {e}")
 
                     # 결과를 직접 반환 (share_urls 포함)
                     return jsonify({
