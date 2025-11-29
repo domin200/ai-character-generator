@@ -1013,24 +1013,88 @@
             handleFiles(files);
         });
 
+        // 이미지 압축/리사이즈 함수
+        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1920;
+
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                // 2MB 미만이면 그대로 반환
+                if (file.size < MAX_FILE_SIZE) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve({ dataUrl: e.target.result, file: file });
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                    return;
+                }
+
+                // 2MB 이상이면 압축
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                img.onload = function() {
+                    let { width, height } = img;
+
+                    // 최대 크기 제한
+                    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // WebP로 변환 (품질 0.8)
+                    const dataUrl = canvas.toDataURL('image/webp', 0.8);
+
+                    // 새 File 객체 생성
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), {
+                                type: 'image/webp'
+                            });
+                            console.log(`이미지 압축: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+                            resolve({ dataUrl: dataUrl, file: compressedFile });
+                        } else {
+                            reject(new Error('이미지 압축 실패'));
+                        }
+                    }, 'image/webp', 0.8);
+                };
+
+                img.onerror = () => reject(new Error('이미지 로드 실패'));
+
+                // 원본 파일을 이미지로 로드
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
         // 파일 처리
-        function handleFiles(files) {
+        async function handleFiles(files) {
             const remaining = 2 - uploadedImages.length;
             const filesToProcess = Array.from(files).slice(0, remaining);
 
-            filesToProcess.forEach(file => {
+            for (const file of filesToProcess) {
                 if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
+                    try {
+                        const result = await compressImage(file);
                         uploadedImages.push({
-                            file: file,
-                            dataUrl: e.target.result
+                            file: result.file,
+                            dataUrl: result.dataUrl
                         });
                         renderUploadedImages();
-                    };
-                    reader.readAsDataURL(file);
+                    } catch (error) {
+                        console.error('이미지 처리 오류:', error);
+                        showToast('이미지 처리 중 오류가 발생했습니다.', 'error');
+                    }
                 }
-            });
+            }
         }
 
         // 폼 제출시 처리
