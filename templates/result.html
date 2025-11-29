@@ -220,8 +220,9 @@
             background: #222;
         }
 
-        /* 2x2 레이아웃용 비율 */
-        .image-container.layout-2x2 {
+        /* 2x2, 1x1 레이아웃용 비율 (동일) */
+        .image-container.layout-2x2,
+        .image-container.layout-1x1 {
             aspect-ratio: 2 / 3;
         }
 
@@ -591,10 +592,13 @@
         function applyLayoutToSkeleton(layout) {
             const containers = document.querySelectorAll('.image-container');
             containers.forEach(container => {
+                // 기존 레이아웃 클래스 제거
+                container.classList.remove('layout-2x2', 'layout-1x1');
+                // 해당 레이아웃 클래스 추가
                 if (layout === '2x2') {
                     container.classList.add('layout-2x2');
-                } else {
-                    container.classList.remove('layout-2x2');
+                } else if (layout === '1x1') {
+                    container.classList.add('layout-1x1');
                 }
             });
         }
