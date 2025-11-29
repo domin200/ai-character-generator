@@ -1,1 +1,1 @@
-🔗 공유하기 버튼 클릭 시 share URL 클립보드 복사
+🔗 생성 완료 후 URL을 share URL로 자동 변경
