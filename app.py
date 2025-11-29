@@ -65,7 +65,13 @@ def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', s
         duo_instruction = "IMPORTANT: Two images are provided. First, determine if they are the SAME person or TWO DIFFERENT people. If SAME PERSON: use both images as reference for that one person's appearance from different angles, generate photos of that SINGLE person only. If TWO DIFFERENT PEOPLE: generate photos featuring BOTH people together naturally in each frame as friends, couple, or companions interacting with each other."
 
     # 레이아웃별 프롬프트 생성
-    if layout == '1x3':
+    if layout == '1x1':
+        layout_instruction = "IMPORTANT: Single large image layout (1x1). One big portrait photo taking up most of the frame."
+        layout_structure = "[narrow top margin] → [large single image] → [bottom section with logo, date, QR]."
+        image_count_text = "1 image"
+        aspect_ratio = "3:4 aspect ratio (portrait orientation)"
+        frame_size = "2120x3187 pixels"
+    elif layout == '1x3':
         layout_instruction = "IMPORTANT: 3 images arranged in SINGLE COLUMN vertically (1x3 layout). NOT 2x2, NOT any other layout. Only vertical single column with 3 images."
         layout_structure = "[narrow top margin] → [image 1] → [image 2] → [image 3] → [bottom section with logo, date, QR]."
         image_count_text = "3 images"
