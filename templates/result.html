@@ -735,6 +735,11 @@
                     displayResults(resultImageUrls);
                     showToast(`AI4컷이 성공적으로 생성되었습니다! (${resultImageUrls.length}장)`, 'success');
 
+                    // URL을 첫 번째 이미지의 share URL로 변경
+                    if (shareUrls.length > 0 && shareUrls[0]) {
+                        window.history.replaceState({}, '', shareUrls[0]);
+                    }
+
                     // GTM 이벤트 - 생성 완료
                     window.dataLayer = window.dataLayer || [];
                     window.dataLayer.push({
