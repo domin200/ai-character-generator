@@ -1,1 +1,1 @@
-🔗 생성 완료 후 URL을 share URL로 자동 변경
+🖼️ 하나의 gallery 레코드에 여러 이미지(image_urls) 저장
