@@ -881,25 +881,49 @@
             }
         });
 
-        // 공유하기 버튼 - share URL 복사
+        // 공유하기 버튼 - Web Share API 사용
         document.getElementById('share-btn').addEventListener('click', async function() {
             if (resultImageUrls.length === 0) return;
 
             // 선택된 이미지의 share URL 생성
             let shareUrl = '';
-            if (shareUrls.length > selectedImageIndex && shareUrls[selectedImageIndex]) {
-                shareUrl = window.location.origin + shareUrls[selectedImageIndex];
+            if (shareUrls.length > 0 && shareUrls[0]) {
+                shareUrl = window.location.origin + shareUrls[0];
             } else {
                 // share URL이 없으면 현재 페이지 URL 사용
                 shareUrl = window.location.href;
             }
 
-            try {
-                await navigator.clipboard.writeText(shareUrl);
-                showToast('이미지 링크가 복사되었습니다!', 'success');
-            } catch (error) {
-                console.error('Copy failed:', error);
-                showToast('링크 복사에 실패했습니다.', 'error');
+            // Web Share API 지원 확인
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'AI4컷 by MIRAI',
+                        text: 'AI4컷으로 만든 사진이에요! 🎉',
+                        url: shareUrl
+                    });
+                    showToast('공유가 완료되었습니다!', 'success');
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Share failed:', error);
+                        // 공유 실패 시 클립보드 복사로 fallback
+                        try {
+                            await navigator.clipboard.writeText(shareUrl);
+                            showToast('링크가 복사되었습니다!', 'success');
+                        } catch (e) {
+                            showToast('공유에 실패했습니다.', 'error');
+                        }
+                    }
+                }
+            } else {
+                // Web Share API 미지원 시 클립보드 복사
+                try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    showToast('링크가 복사되었습니다!', 'success');
+                } catch (error) {
+                    console.error('Copy failed:', error);
+                    showToast('링크 복사에 실패했습니다.', 'error');
+                }
             }
         });
 
