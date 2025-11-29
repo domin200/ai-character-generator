@@ -205,20 +205,33 @@ def result():
 
 @app.route('/r/<gallery_id>')
 def result_by_id(gallery_id):
-    """저장된 결과 이미지 조회 페이지"""
+    """저장된 결과 이미지 조회 페이지 (24시간 만료)"""
+    from flask import redirect, url_for
+    from datetime import datetime, timedelta, timezone
+
     if not supabase_client:
-        return render_template('result.html', saved_image=None)
+        return redirect(url_for('index'))
 
     try:
         # 갤러리에서 이미지 조회
         result = supabase_client.table('gallery').select('*').eq('id', gallery_id).single().execute()
         if result.data:
+            # 24시간 만료 체크
+            created_at_str = result.data.get('created_at')
+            if created_at_str:
+                # ISO 형식 파싱 (Supabase는 UTC 시간 반환)
+                created_at = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+                now = datetime.now(timezone.utc)
+                if now - created_at > timedelta(hours=24):
+                    print(f"⏰ Gallery {gallery_id} expired (created: {created_at})")
+                    return redirect(url_for('index'))
+
             return render_template('result.html', saved_image=result.data)
         else:
-            return render_template('result.html', saved_image=None)
+            return redirect(url_for('index'))
     except Exception as e:
         print(f"Gallery fetch error: {e}")
-        return render_template('result.html', saved_image=None)
+        return redirect(url_for('index'))
 
 @app.route('/og-image.png')
 def og_image():
