@@ -35,10 +35,10 @@ if SUPABASE_URL and SUPABASE_KEY:
 else:
     print("⚠️ Supabase credentials not found")
 
-def save_to_supabase(image_data, layout, style, color_mode, is_duo, image_count):
-    """Supabase에 이미지 저장 및 통계 기록"""
+def save_image_to_supabase(image_data, layout, style, color_mode):
+    """Supabase Storage에 이미지 저장 및 갤러리 등록, gallery_id 반환"""
     if not supabase_client:
-        return None
+        return None, None
 
     try:
         # 1. Storage에 이미지 저장
@@ -60,7 +60,29 @@ def save_to_supabase(image_data, layout, style, color_mode, is_duo, image_count)
         image_url = f"{SUPABASE_URL}/storage/v1/object/public/ai4cut-images/{filename}"
         print(f"✅ Image saved to Supabase: {image_url}")
 
-        # 2. 통계 테이블에 기록
+        # 2. 갤러리 테이블에 저장
+        gallery_data = {
+            'image_url': image_url,
+            'layout': layout,
+            'style': style,
+            'color_mode': color_mode,
+            'is_public': True
+        }
+        result = supabase_client.table('gallery').insert(gallery_data).execute()
+        gallery_id = result.data[0]['id'] if result.data else None
+        print(f"✅ Gallery entry created: {gallery_id}")
+
+        return image_url, gallery_id
+    except Exception as e:
+        print(f"❌ Supabase save error: {e}")
+        return None, None
+
+def save_stats_to_supabase(layout, style, color_mode, is_duo, image_count):
+    """Supabase에 생성 통계 기록 (요청당 1회)"""
+    if not supabase_client:
+        return
+
+    try:
         stats_data = {
             'layout': layout,
             'style': style,
@@ -70,22 +92,8 @@ def save_to_supabase(image_data, layout, style, color_mode, is_duo, image_count)
         }
         supabase_client.table('generations').insert(stats_data).execute()
         print(f"✅ Stats recorded: {stats_data}")
-
-        # 3. 갤러리 테이블에 저장
-        gallery_data = {
-            'image_url': image_url,
-            'layout': layout,
-            'style': style,
-            'color_mode': color_mode,
-            'is_public': True
-        }
-        supabase_client.table('gallery').insert(gallery_data).execute()
-        print(f"✅ Gallery entry created")
-
-        return image_url
     except Exception as e:
-        print(f"❌ Supabase save error: {e}")
-        return None
+        print(f"❌ Supabase stats error: {e}")
 
 # AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃, 색상모드, 스타일, 듀오 모드 동적 생성)
 def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', style='default', is_duo=False):
@@ -181,6 +189,23 @@ def index():
 @app.route('/result')
 def result():
     return render_template('result.html')
+
+@app.route('/r/<gallery_id>')
+def result_by_id(gallery_id):
+    """저장된 결과 이미지 조회 페이지"""
+    if not supabase_client:
+        return render_template('result.html', saved_image=None)
+
+    try:
+        # 갤러리에서 이미지 조회
+        result = supabase_client.table('gallery').select('*').eq('id', gallery_id).single().execute()
+        if result.data:
+            return render_template('result.html', saved_image=result.data)
+        else:
+            return render_template('result.html', saved_image=None)
+    except Exception as e:
+        print(f"Gallery fetch error: {e}")
+        return render_template('result.html', saved_image=None)
 
 @app.route('/og-image.png')
 def og_image():
@@ -355,28 +380,29 @@ def generate_image():
                 if result_data_uris:
                     print(f"✅ AI-4-cut generation completed successfully ({len(result_data_uris)} images)")
 
-                    # Supabase에 모든 이미지 저장 (비동기적으로 실패해도 결과 반환)
+                    # Supabase에 저장 및 share_urls 수집
+                    share_urls = []
                     try:
+                        # 통계는 요청당 1회만 기록
+                        save_stats_to_supabase(layout, style, color_mode, is_duo, len(result_data_uris))
+
+                        # 모든 이미지를 Storage + 갤러리에 저장
                         for i, img_data in enumerate(result_data_uris):
-                            save_to_supabase(
-                                img_data,
-                                layout,
-                                style,
-                                color_mode,
-                                is_duo,
-                                len(result_data_uris)
-                            )
-                            print(f"✅ Image {i+1} saved to Supabase")
+                            image_url, gallery_id = save_image_to_supabase(img_data, layout, style, color_mode)
+                            if gallery_id:
+                                share_urls.append(f"/r/{gallery_id}")
+                            print(f"✅ Image {i+1} saved to Supabase (gallery_id: {gallery_id})")
                     except Exception as e:
                         print(f"⚠️ Supabase save failed (non-blocking): {e}")
 
-                    # 결과를 직접 반환 (상태 저장 없이)
+                    # 결과를 직접 반환 (share_urls 포함)
                     return jsonify({
                         'success': True,
                         'result_ready': True,
                         'result_urls': result_data_uris,
                         'result_url': result_data_uris[0],
-                        'result_filename': 'ai_4_cut.png'
+                        'result_filename': 'ai_4_cut.png',
+                        'share_urls': share_urls
                     })
                 else:
                     return jsonify({'error': '결과 이미지를 다운로드할 수 없습니다.'}), 500

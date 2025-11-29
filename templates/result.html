@@ -552,6 +552,9 @@
         let selectedImageIndex = 0;
         let resultFilename = 'ai_4_cut.png';
 
+        // 서버에서 전달된 저장된 이미지 (URL로 직접 접근 시)
+        const savedImage = {{ saved_image | tojson | default('null') }};
+
         // Toast notification function
         function showToast(message, type = 'success') {
             const toastContainer = document.getElementById('toast-container');
@@ -605,7 +608,20 @@
 
         // 페이지 로드 시 처리
         function init() {
-            // 이미 결과가 있는지 확인
+            // 1. 서버에서 전달된 저장된 이미지가 있는 경우 (URL로 직접 접근)
+            if (savedImage && savedImage.image_url) {
+                console.log('[Result] Loading saved image:', savedImage);
+                resultImageUrls = [savedImage.image_url];
+                resultFilename = 'ai_4_cut.png';
+                // 레이아웃 적용
+                if (savedImage.layout) {
+                    applyLayoutToSkeleton(savedImage.layout);
+                }
+                displaySavedImage(savedImage);
+                return;
+            }
+
+            // 2. 이미 결과가 있는지 확인
             const storedResult = sessionStorage.getItem('ai4cut_result');
             if (storedResult) {
                 try {
@@ -627,7 +643,7 @@
                 }
             }
 
-            // 생성 요청 데이터가 있는지 확인
+            // 3. 생성 요청 데이터가 있는지 확인
             const storedRequest = sessionStorage.getItem('ai4cut_request');
             if (storedRequest) {
                 try {
@@ -650,6 +666,31 @@
             setTimeout(() => {
                 window.location.href = '/';
             }, 2000);
+        }
+
+        // 저장된 이미지 표시 (URL 접근 시)
+        function displaySavedImage(imageData) {
+            const loadingInfo = document.getElementById('loading-info');
+            const loadingLogoContainer = document.getElementById('loading-logo-container');
+            const buttonGroup = document.getElementById('button-group');
+            const skeletonGrid = document.getElementById('skeleton-grid');
+
+            // 로딩 정보 숨기기
+            loadingInfo.style.display = 'none';
+            loadingLogoContainer.style.display = 'none';
+
+            // 스켈레톤 그리드를 단일 이미지로 교체
+            skeletonGrid.innerHTML = `
+                <div class="skeleton-item selected" style="grid-column: span 2;">
+                    <div class="skeleton-label">AI4컷</div>
+                    <div class="image-container" style="aspect-ratio: auto;">
+                        <img class="image-real loaded" src="${imageData.image_url}" alt="AI4컷 결과" style="opacity: 1; filter: none; transform: none;">
+                    </div>
+                </div>
+            `;
+
+            // 버튼 표시
+            buttonGroup.style.display = 'flex';
         }
 
         // AI4컷 생성 시작
