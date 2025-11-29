@@ -5,6 +5,7 @@ import fal_client
 from dotenv import load_dotenv
 import time
 import requests
+import uuid
 
 # .env 파일 로드
 load_dotenv()
@@ -20,6 +21,72 @@ else:
     # Vercel 환경에서는 환경변수가 미리 설정되어 있을 수 있음
     if not os.getenv('FAL_KEY'):
         print("WARNING: FAL_KEY not found in environment")
+
+# Supabase 설정
+supabase_client = None
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        from supabase import create_client
+        supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print("✅ Supabase connected")
+    except Exception as e:
+        print(f"⚠️ Supabase connection failed: {e}")
+else:
+    print("⚠️ Supabase credentials not found")
+
+def save_to_supabase(image_data, layout, style, color_mode, is_duo, image_count):
+    """Supabase에 이미지 저장 및 통계 기록"""
+    if not supabase_client:
+        return None
+
+    try:
+        # 1. Storage에 이미지 저장
+        filename = f"{uuid.uuid4()}.png"
+
+        # base64 데이터에서 실제 바이너리 추출
+        if image_data.startswith('data:'):
+            image_data = image_data.split(',')[1]
+        image_bytes = base64.b64decode(image_data)
+
+        # Storage에 업로드
+        storage_result = supabase_client.storage.from_('ai4cut-images').upload(
+            filename,
+            image_bytes,
+            {'content-type': 'image/png'}
+        )
+
+        # 공개 URL 생성
+        image_url = f"{SUPABASE_URL}/storage/v1/object/public/ai4cut-images/{filename}"
+        print(f"✅ Image saved to Supabase: {image_url}")
+
+        # 2. 통계 테이블에 기록
+        stats_data = {
+            'layout': layout,
+            'style': style,
+            'color_mode': color_mode,
+            'is_duo': is_duo,
+            'image_count': image_count
+        }
+        supabase_client.table('generations').insert(stats_data).execute()
+        print(f"✅ Stats recorded: {stats_data}")
+
+        # 3. 갤러리 테이블에 저장
+        gallery_data = {
+            'image_url': image_url,
+            'layout': layout,
+            'style': style,
+            'color_mode': color_mode,
+            'is_public': True
+        }
+        supabase_client.table('gallery').insert(gallery_data).execute()
+        print(f"✅ Gallery entry created")
+
+        return image_url
+    except Exception as e:
+        print(f"❌ Supabase save error: {e}")
+        return None
 
 # AI4컷 생성 프롬프트 생성 함수 (날짜, 프레임 색상, 레이아웃, 색상모드, 스타일, 듀오 모드 동적 생성)
 def get_ai_4_cut_prompt(frame_color='black', layout='1x4', color_mode='color', style='default', is_duo=False):
@@ -288,6 +355,19 @@ def generate_image():
 
                 if result_data_uris:
                     print(f"✅ AI-4-cut generation completed successfully ({len(result_data_uris)} images)")
+
+                    # Supabase에 첫 번째 이미지 저장 (비동기적으로 실패해도 결과 반환)
+                    try:
+                        save_to_supabase(
+                            result_data_uris[0],
+                            layout,
+                            style,
+                            color_mode,
+                            is_duo,
+                            len(result_data_uris)
+                        )
+                    except Exception as e:
+                        print(f"⚠️ Supabase save failed (non-blocking): {e}")
 
                     # 결과를 직접 반환 (상태 저장 없이)
                     return jsonify({
