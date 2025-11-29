@@ -1013,10 +1013,8 @@
             handleFiles(files);
         });
 
-        // 이미지 압축/리사이즈 함수
+        // 이미지 압축 함수 (WebP 변환만, 리사이즈 없음)
         const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-        const MAX_WIDTH = 1920;
-        const MAX_HEIGHT = 1920;
 
         function compressImage(file) {
             return new Promise((resolve, reject) => {
@@ -1029,24 +1027,16 @@
                     return;
                 }
 
-                // 2MB 이상이면 압축
+                // 2MB 이상이면 WebP로 변환 (원본 크기 유지)
                 const img = new Image();
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
 
                 img.onload = function() {
-                    let { width, height } = img;
-
-                    // 최대 크기 제한
-                    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-                        width = Math.round(width * ratio);
-                        height = Math.round(height * ratio);
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
+                    // 원본 크기 그대로 유지
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
 
                     // WebP로 변환 (품질 0.8)
                     const dataUrl = canvas.toDataURL('image/webp', 0.8);
@@ -1057,10 +1047,10 @@
                             const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), {
                                 type: 'image/webp'
                             });
-                            console.log(`이미지 압축: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+                            console.log(`WebP 변환: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
                             resolve({ dataUrl: dataUrl, file: compressedFile });
                         } else {
-                            reject(new Error('이미지 압축 실패'));
+                            reject(new Error('이미지 변환 실패'));
                         }
                     }, 'image/webp', 0.8);
                 };
