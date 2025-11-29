@@ -772,11 +772,11 @@
 
                 <div class="selector-row">
                     <div class="selector-item">
-                        <label>프레임 색상</label>
-                        <div class="color-picker-wrapper">
+                        <label for="frame-color">프레임 색상</label>
+                        <label class="color-picker-wrapper" for="frame-color">
                             <input type="color" id="frame-color" name="frame_color" value="#000000">
                             <span class="color-code" id="color-code-display">#000000</span>
-                        </div>
+                        </label>
                     </div>
                     <div class="selector-item">
                         <label for="layout">레이아웃</label>
@@ -866,7 +866,6 @@
         const uploadForm = document.getElementById('upload-form');
         const colorPicker = document.getElementById('frame-color');
         const colorCodeDisplay = document.getElementById('color-code-display');
-        const colorPickerWrapper = document.querySelector('.color-picker-wrapper');
 
         // 업로드된 이미지 데이터 (최대 2개)
         let uploadedImages = [];
@@ -874,13 +873,6 @@
         // 컬러피커 값 변경 시 색상 코드 업데이트
         colorPicker.addEventListener('input', function(e) {
             colorCodeDisplay.textContent = e.target.value.toUpperCase();
-        });
-
-        // wrapper 클릭 시 컬러피커 열기
-        colorPickerWrapper.addEventListener('click', function(e) {
-            if (e.target !== colorPicker) {
-                colorPicker.click();
-            }
         });
 
         // 진행 상태 추적
