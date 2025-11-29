@@ -356,16 +356,18 @@ def generate_image():
                 if result_data_uris:
                     print(f"✅ AI-4-cut generation completed successfully ({len(result_data_uris)} images)")
 
-                    # Supabase에 첫 번째 이미지 저장 (비동기적으로 실패해도 결과 반환)
+                    # Supabase에 모든 이미지 저장 (비동기적으로 실패해도 결과 반환)
                     try:
-                        save_to_supabase(
-                            result_data_uris[0],
-                            layout,
-                            style,
-                            color_mode,
-                            is_duo,
-                            len(result_data_uris)
-                        )
+                        for i, img_data in enumerate(result_data_uris):
+                            save_to_supabase(
+                                img_data,
+                                layout,
+                                style,
+                                color_mode,
+                                is_duo,
+                                len(result_data_uris)
+                            )
+                            print(f"✅ Image {i+1} saved to Supabase")
                     except Exception as e:
                         print(f"⚠️ Supabase save failed (non-blocking): {e}")
 
