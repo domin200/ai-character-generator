@@ -189,7 +189,7 @@ def index():
 
 @app.route('/result')
 def result():
-    return render_template('result.html')
+    return render_template('result.html', saved_image=None)
 
 @app.route('/r/<gallery_id>')
 def result_by_id(gallery_id):
