@@ -496,7 +496,10 @@
         @media (max-width: 768px) {
             .main-content {
                 padding: 16px;
-                padding-bottom: 180px;
+            }
+
+            .result-image-container {
+                margin-bottom: 0;
             }
 
             .image-display {
@@ -527,6 +530,11 @@
 
             .button-group .btn-icon {
                 display: none;
+            }
+
+            /* 버튼이 main-content 밖으로 나가도록 */
+            .container {
+                padding-bottom: 80px;
             }
         }
     </style>
@@ -581,20 +589,22 @@
                 <div class="images-grid" id="result-container" style="display: none;"></div>
             </div>
 
-            <div class="button-group" id="button-group" style="display: none;">
-                <button class="btn btn-primary" id="download-btn">
-                    <span class="btn-icon">&#8681;</span>
-                    다운로드
-                </button>
-                <button class="btn btn-success" id="share-btn">
-                    <span class="btn-icon">&#10149;</span>
-                    공유하기
-                </button>
-                <button class="btn btn-secondary" id="retry-btn">
-                    <span class="btn-icon">&#8634;</span>
-                    한번 더 하기
-                </button>
             </div>
+        </div>
+
+        <div class="button-group" id="button-group" style="display: none;">
+            <button class="btn btn-primary" id="download-btn">
+                <span class="btn-icon">&#8681;</span>
+                다운로드
+            </button>
+            <button class="btn btn-success" id="share-btn">
+                <span class="btn-icon">&#10149;</span>
+                공유하기
+            </button>
+            <button class="btn btn-secondary" id="retry-btn">
+                <span class="btn-icon">&#8634;</span>
+                한번 더 하기
+            </button>
         </div>
     </div>
 

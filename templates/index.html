@@ -619,18 +619,14 @@
                 margin: 0;
             }
 
-            /* 하단 버튼 공간 확보 */
-            #step1 {
-                padding-bottom: 80px;
-            }
-
-            #step2 {
-                padding-bottom: 80px;
-            }
-
             /* 모바일에서 selector-row 마진 축소 */
             .selector-row {
                 margin-bottom: 0 !important;
+            }
+
+            /* 버튼 공간 확보 */
+            .container {
+                padding-bottom: 80px;
             }
         }
 
@@ -920,12 +916,12 @@
                     </div>
                 </div>
             </form>
+        </div>
 
-            <div class="btn-fixed-bottom" id="next-btn-wrapper">
-                <button type="button" class="btn" id="next-btn" disabled>
-                    스타일 선택하기
-                </button>
-            </div>
+        <div class="btn-fixed-bottom" id="next-btn-wrapper">
+            <button type="button" class="btn" id="next-btn" disabled>
+                스타일 선택하기
+            </button>
         </div>
 
         <!-- Step 2: 스타일 선택 -->
@@ -983,12 +979,12 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="btn-fixed-bottom" id="generate-btn-wrapper">
-                <button type="button" class="btn" id="generate-btn">
-                    AI4컷 생성 시작
-                </button>
-            </div>
+        <div class="btn-fixed-bottom" id="generate-btn-wrapper" style="display: none;">
+            <button type="button" class="btn" id="generate-btn">
+                AI4컷 생성 시작
+            </button>
         </div>
 
         <!-- Gallery Section -->
@@ -1052,12 +1048,17 @@
             colorCodeDisplay.textContent = e.target.value.toUpperCase();
         });
 
+        const nextBtnWrapper = document.getElementById('next-btn-wrapper');
+        const generateBtnWrapper = document.getElementById('generate-btn-wrapper');
+
         // 스텝 전환
         nextBtn.addEventListener('click', function() {
             if (uploadedImages.length > 0) {
                 step1.style.display = 'none';
                 step2.style.display = 'block';
                 gallerySection.style.display = 'none';
+                nextBtnWrapper.style.display = 'none';
+                generateBtnWrapper.style.display = 'block';
             }
         });
 
@@ -1065,6 +1066,8 @@
             step2.style.display = 'none';
             step1.style.display = 'block';
             gallerySection.style.display = 'block';
+            nextBtnWrapper.style.display = 'block';
+            generateBtnWrapper.style.display = 'none';
         });
 
         // 스타일 버튼 클릭 이벤트
