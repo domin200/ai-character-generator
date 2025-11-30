@@ -599,6 +599,34 @@
                 font-size: 0.625rem;
                 padding: 16px 4px 4px;
             }
+
+            /* 모바일 하단 고정 버튼 */
+            .btn-fixed-bottom {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 16px 20px;
+                padding-bottom: calc(16px + env(safe-area-inset-bottom));
+                background: rgba(28, 28, 30, 0.95);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                z-index: 100;
+            }
+
+            .btn-fixed-bottom .btn {
+                margin: 0;
+            }
+
+            /* 하단 버튼 공간 확보 */
+            #step1 {
+                padding-bottom: 100px;
+            }
+
+            #step2 {
+                padding-bottom: 100px;
+            }
         }
 
         /* Toast Notification Styles */
@@ -887,9 +915,11 @@
                     </div>
                 </div>
 
-                <button type="button" class="btn" id="next-btn" disabled>
-                    스타일 선택하기
-                </button>
+                <div class="btn-fixed-bottom" id="next-btn-wrapper">
+                    <button type="button" class="btn" id="next-btn" disabled>
+                        스타일 선택하기
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -950,9 +980,11 @@
                 </div>
             </div>
 
-            <button type="button" class="btn" id="generate-btn">
-                AI4컷 생성 시작
-            </button>
+            <div class="btn-fixed-bottom" id="generate-btn-wrapper">
+                <button type="button" class="btn" id="generate-btn">
+                    AI4컷 생성 시작
+                </button>
+            </div>
         </div>
 
         <!-- Gallery Section -->
