@@ -5,7 +5,13 @@ import fal_client
 from dotenv import load_dotenv
 import time
 import requests
-import uuid
+import string
+import secrets
+
+def generate_nanoid(size=8):
+    """nanoid 스타일의 짧은 ID 생성 (8자리 기본)"""
+    alphabet = string.ascii_letters + string.digits  # a-zA-Z0-9
+    return ''.join(secrets.choice(alphabet) for _ in range(size))
 
 # .env 파일 로드
 load_dotenv()
@@ -36,12 +42,14 @@ else:
     print("⚠️ Supabase credentials not found")
 
 def create_gallery_placeholder(layout, style, color_mode):
-    """갤러리 레코드를 미리 생성하고 gallery_id 반환 (이미지 URL은 나중에 업데이트)"""
+    """갤러리 레코드를 미리 생성하고 short_id 반환 (이미지 URL은 나중에 업데이트)"""
     if not supabase_client:
         return None
 
     try:
+        short_id = generate_nanoid(8)  # 8자리 짧은 ID 생성
         gallery_data = {
+            'id': short_id,  # nanoid를 직접 id로 사용
             'image_url': None,  # 나중에 업데이트
             'layout': layout,
             'style': style,
@@ -65,7 +73,7 @@ def update_gallery_with_images(gallery_id, image_data_list):
         image_urls = []
         for image_data in image_data_list:
             # 1. Storage에 이미지 저장
-            filename = f"{uuid.uuid4()}.png"
+            filename = f"{generate_nanoid(12)}.png"
 
             # base64 데이터에서 실제 바이너리 추출
             if image_data.startswith('data:'):
