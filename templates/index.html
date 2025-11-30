@@ -599,9 +599,17 @@
                 font-size: 0.625rem;
                 padding: 16px 4px 4px;
             }
+        }
 
+        /* PC에서 버튼 여백 */
+        .btn-fixed-bottom {
+            margin-top: 16px;
+        }
+
+        @media (max-width: 768px) {
             /* 모바일 하단 고정 버튼 */
             .btn-fixed-bottom {
+                margin-top: 0;
                 position: fixed;
                 bottom: 0;
                 left: 0;
