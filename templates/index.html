@@ -505,6 +505,83 @@
             cursor: not-allowed;
         }
 
+        /* Style Buttons Grid */
+        .style-section {
+            margin-bottom: 20px;
+        }
+
+        .style-section-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #ffffff;
+            opacity: 0.9;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .style-btn {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            background: #3c3c3e;
+        }
+
+        .style-btn:hover {
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .style-btn.selected {
+            border-color: #007AFF;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+        }
+
+        .style-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .style-btn-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 20px 6px 6px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .style-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+
+            .style-btn {
+                border-radius: 8px;
+                border-width: 2px;
+            }
+
+            .style-btn-label {
+                font-size: 0.625rem;
+                padding: 16px 4px 4px;
+            }
+        }
+
         /* Toast Notification Styles */
         .toast-container {
             position: fixed;
@@ -788,26 +865,60 @@
                         </select>
                     </div>
                 </div>
-                <div class="selector-row">
-                    <div class="selector-item">
-                        <label for="style">스타일</label>
-                        <select id="style" name="style">
-                            <option value="default" selected>기본</option>
-                            <option value="bw">흑백</option>
-                            <option value="cool">쿨톤</option>
-                            <option value="warm">웜톤</option>
-                            <option value="animation">애니메이션</option>
-                            <option value="realistic">실사화</option>
-                            <option value="disney">디즈니</option>
-                            <option value="ghibli">지브리</option>
-                            <option value="baby">아기</option>
-                            <option value="old">노인</option>
-                            <option value="studio">스튜디오</option>
-                            <option value="iphone">아이폰</option>
-                        </select>
+                <div class="style-section">
+                    <span class="style-section-label">스타일</span>
+                    <input type="hidden" id="style" name="style" value="default">
+                    <div class="style-grid">
+                        <div class="style-btn selected" data-style="default">
+                            <img src="/static/style/default.png" alt="기본">
+                            <span class="style-btn-label">기본</span>
+                        </div>
+                        <div class="style-btn" data-style="bw">
+                            <img src="/static/style/blackwhite.png" alt="흑백">
+                            <span class="style-btn-label">흑백</span>
+                        </div>
+                        <div class="style-btn" data-style="cool">
+                            <img src="/static/style/cooltone.png" alt="쿨톤">
+                            <span class="style-btn-label">쿨톤</span>
+                        </div>
+                        <div class="style-btn" data-style="warm">
+                            <img src="/static/style/warmtone.png" alt="웜톤">
+                            <span class="style-btn-label">웜톤</span>
+                        </div>
+                        <div class="style-btn" data-style="animation">
+                            <img src="/static/style/anime.png" alt="애니메이션">
+                            <span class="style-btn-label">애니메이션</span>
+                        </div>
+                        <div class="style-btn" data-style="realistic">
+                            <img src="/static/style/실사화.png" alt="실사화">
+                            <span class="style-btn-label">실사화</span>
+                        </div>
+                        <div class="style-btn" data-style="disney">
+                            <img src="/static/style/disney.png" alt="디즈니">
+                            <span class="style-btn-label">디즈니</span>
+                        </div>
+                        <div class="style-btn" data-style="ghibli">
+                            <img src="/static/style/gibri.png" alt="지브리">
+                            <span class="style-btn-label">지브리</span>
+                        </div>
+                        <div class="style-btn" data-style="baby">
+                            <img src="/static/style/baby.png" alt="아기">
+                            <span class="style-btn-label">아기</span>
+                        </div>
+                        <div class="style-btn" data-style="old">
+                            <img src="/static/style/old.png" alt="노인">
+                            <span class="style-btn-label">노인</span>
+                        </div>
+                        <div class="style-btn" data-style="studio">
+                            <img src="/static/style/studio.png" alt="스튜디오">
+                            <span class="style-btn-label">스튜디오</span>
+                        </div>
+                        <div class="style-btn" data-style="iphone">
+                            <img src="/static/style/iphone.png" alt="아이폰">
+                            <span class="style-btn-label">아이폰</span>
+                        </div>
                     </div>
                 </div>
-                <input type="hidden" id="color-mode" name="color_mode" value="color">
 
                 <button type="submit" class="btn" id="generate-btn" disabled>
                     AI4컷 생성 시작
@@ -942,6 +1053,19 @@
             uploadedImages.splice(index, 1);
             renderUploadedImages();
         }
+
+        // 스타일 버튼 클릭 이벤트
+        const styleInput = document.getElementById('style');
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 모든 버튼에서 selected 제거
+                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
+                // 클릭한 버튼에 selected 추가
+                this.classList.add('selected');
+                // hidden input 값 업데이트
+                styleInput.value = this.dataset.style;
+            });
+        });
 
         // file input 동기화
         function syncFileInputs() {
