@@ -621,11 +621,16 @@
 
             /* 하단 버튼 공간 확보 */
             #step1 {
-                padding-bottom: 100px;
+                padding-bottom: 80px;
             }
 
             #step2 {
-                padding-bottom: 100px;
+                padding-bottom: 80px;
+            }
+
+            /* 모바일에서 selector-row 마진 축소 */
+            .selector-row {
+                margin-bottom: 0 !important;
             }
         }
 
@@ -914,13 +919,13 @@
                         </select>
                     </div>
                 </div>
-
-                <div class="btn-fixed-bottom" id="next-btn-wrapper">
-                    <button type="button" class="btn" id="next-btn" disabled>
-                        스타일 선택하기
-                    </button>
-                </div>
             </form>
+
+            <div class="btn-fixed-bottom" id="next-btn-wrapper">
+                <button type="button" class="btn" id="next-btn" disabled>
+                    스타일 선택하기
+                </button>
+            </div>
         </div>
 
         <!-- Step 2: 스타일 선택 -->
