@@ -505,6 +505,25 @@
             cursor: not-allowed;
         }
 
+        /* Back Button */
+        .back-btn {
+            background: none;
+            border: none;
+            color: #007AFF;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .back-btn:hover {
+            opacity: 0.8;
+        }
+
         /* Style Buttons Grid */
         .style-section {
             margin-bottom: 20px;
@@ -831,7 +850,8 @@
 
     <div class="container">
 
-        <div class="main-content">
+        <!-- Step 1: 이미지 업로드 + 옵션 -->
+        <div class="main-content" id="step1">
             <div class="upload-section">
                 <div class="uploaded-images" id="uploaded-images"></div>
                 <div class="image-display" id="preview-container">
@@ -846,6 +866,7 @@
             <form action="/generate" method="post" enctype="multipart/form-data" id="upload-form">
                 <input type="file" id="image" name="image" accept="image/*" class="hidden-file-input">
                 <input type="file" id="image2" name="image2" accept="image/*" class="hidden-file-input">
+                <input type="hidden" id="style" name="style" value="default">
 
                 <div class="selector-row">
                     <div class="selector-item">
@@ -865,65 +886,73 @@
                         </select>
                     </div>
                 </div>
-                <div class="style-section">
-                    <span class="style-section-label">스타일</span>
-                    <input type="hidden" id="style" name="style" value="default">
-                    <div class="style-grid">
-                        <div class="style-btn selected" data-style="default">
-                            <img src="/static/style/default.png" alt="기본">
-                            <span class="style-btn-label">기본</span>
-                        </div>
-                        <div class="style-btn" data-style="bw">
-                            <img src="/static/style/blackwhite.png" alt="흑백">
-                            <span class="style-btn-label">흑백</span>
-                        </div>
-                        <div class="style-btn" data-style="cool">
-                            <img src="/static/style/cooltone.png" alt="쿨톤">
-                            <span class="style-btn-label">쿨톤</span>
-                        </div>
-                        <div class="style-btn" data-style="warm">
-                            <img src="/static/style/warmtone.png" alt="웜톤">
-                            <span class="style-btn-label">웜톤</span>
-                        </div>
-                        <div class="style-btn" data-style="animation">
-                            <img src="/static/style/anime.png" alt="애니메이션">
-                            <span class="style-btn-label">애니메이션</span>
-                        </div>
-                        <div class="style-btn" data-style="realistic">
-                            <img src="/static/style/실사화.png" alt="실사화">
-                            <span class="style-btn-label">실사화</span>
-                        </div>
-                        <div class="style-btn" data-style="disney">
-                            <img src="/static/style/disney.png" alt="디즈니">
-                            <span class="style-btn-label">디즈니</span>
-                        </div>
-                        <div class="style-btn" data-style="ghibli">
-                            <img src="/static/style/gibri.png" alt="지브리">
-                            <span class="style-btn-label">지브리</span>
-                        </div>
-                        <div class="style-btn" data-style="baby">
-                            <img src="/static/style/baby.png" alt="아기">
-                            <span class="style-btn-label">아기</span>
-                        </div>
-                        <div class="style-btn" data-style="old">
-                            <img src="/static/style/old.png" alt="노인">
-                            <span class="style-btn-label">노인</span>
-                        </div>
-                        <div class="style-btn" data-style="studio">
-                            <img src="/static/style/studio.png" alt="스튜디오">
-                            <span class="style-btn-label">스튜디오</span>
-                        </div>
-                        <div class="style-btn" data-style="iphone">
-                            <img src="/static/style/iphone.png" alt="아이폰">
-                            <span class="style-btn-label">아이폰</span>
-                        </div>
-                    </div>
-                </div>
 
-                <button type="submit" class="btn" id="generate-btn" disabled>
-                    AI4컷 생성 시작
+                <button type="button" class="btn" id="next-btn" disabled>
+                    스타일 선택하기
                 </button>
             </form>
+        </div>
+
+        <!-- Step 2: 스타일 선택 -->
+        <div class="main-content" id="step2" style="display: none;">
+            <button type="button" class="back-btn" id="back-btn">← 이전</button>
+            <div class="style-section">
+                <span class="style-section-label">스타일 선택</span>
+                <div class="style-grid">
+                    <div class="style-btn selected" data-style="default">
+                        <img src="/static/style/default.png" alt="기본">
+                        <span class="style-btn-label">기본</span>
+                    </div>
+                    <div class="style-btn" data-style="bw">
+                        <img src="/static/style/blackwhite.png" alt="흑백">
+                        <span class="style-btn-label">흑백</span>
+                    </div>
+                    <div class="style-btn" data-style="cool">
+                        <img src="/static/style/cooltone.png" alt="쿨톤">
+                        <span class="style-btn-label">쿨톤</span>
+                    </div>
+                    <div class="style-btn" data-style="warm">
+                        <img src="/static/style/warmtone.png" alt="웜톤">
+                        <span class="style-btn-label">웜톤</span>
+                    </div>
+                    <div class="style-btn" data-style="animation">
+                        <img src="/static/style/anime.png" alt="애니메이션">
+                        <span class="style-btn-label">애니메이션</span>
+                    </div>
+                    <div class="style-btn" data-style="realistic">
+                        <img src="/static/style/실사화.png" alt="실사화">
+                        <span class="style-btn-label">실사화</span>
+                    </div>
+                    <div class="style-btn" data-style="disney">
+                        <img src="/static/style/disney.png" alt="디즈니">
+                        <span class="style-btn-label">디즈니</span>
+                    </div>
+                    <div class="style-btn" data-style="ghibli">
+                        <img src="/static/style/gibri.png" alt="지브리">
+                        <span class="style-btn-label">지브리</span>
+                    </div>
+                    <div class="style-btn" data-style="baby">
+                        <img src="/static/style/baby.png" alt="아기">
+                        <span class="style-btn-label">아기</span>
+                    </div>
+                    <div class="style-btn" data-style="old">
+                        <img src="/static/style/old.png" alt="노인">
+                        <span class="style-btn-label">노인</span>
+                    </div>
+                    <div class="style-btn" data-style="studio">
+                        <img src="/static/style/studio.png" alt="스튜디오">
+                        <span class="style-btn-label">스튜디오</span>
+                    </div>
+                    <div class="style-btn" data-style="iphone">
+                        <img src="/static/style/iphone.png" alt="아이폰">
+                        <span class="style-btn-label">아이폰</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn" id="generate-btn">
+                AI4컷 생성 시작
+            </button>
         </div>
 
         <!-- Gallery Section -->
@@ -969,9 +998,15 @@
         const fileInput = document.getElementById('image');
         const fileInput2 = document.getElementById('image2');
         const generateBtn = document.getElementById('generate-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const backBtn = document.getElementById('back-btn');
         const uploadForm = document.getElementById('upload-form');
         const colorPicker = document.getElementById('frame-color');
         const colorCodeDisplay = document.getElementById('color-code-display');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const styleInput = document.getElementById('style');
+        const gallerySection = document.querySelector('.gallery-section');
 
         // 업로드된 이미지 데이터 (최대 2개)
         let uploadedImages = [];
@@ -979,6 +1014,30 @@
         // 컬러피커 값 변경 시 색상 코드 업데이트
         colorPicker.addEventListener('input', function(e) {
             colorCodeDisplay.textContent = e.target.value.toUpperCase();
+        });
+
+        // 스텝 전환
+        nextBtn.addEventListener('click', function() {
+            if (uploadedImages.length > 0) {
+                step1.style.display = 'none';
+                step2.style.display = 'block';
+                gallerySection.style.display = 'none';
+            }
+        });
+
+        backBtn.addEventListener('click', function() {
+            step2.style.display = 'none';
+            step1.style.display = 'block';
+            gallerySection.style.display = 'block';
+        });
+
+        // 스타일 버튼 클릭 이벤트
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                styleInput.value = this.dataset.style;
+            });
         });
 
         // 진행 상태 추적
@@ -1008,7 +1067,7 @@
 
         // 버튼 활성화 체크
         function updateGenerateButton() {
-            generateBtn.disabled = uploadedImages.length === 0;
+            nextBtn.disabled = uploadedImages.length === 0;
         }
 
         // 업로드 영역 상태 업데이트
@@ -1053,19 +1112,6 @@
             uploadedImages.splice(index, 1);
             renderUploadedImages();
         }
-
-        // 스타일 버튼 클릭 이벤트
-        const styleInput = document.getElementById('style');
-        document.querySelectorAll('.style-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // 모든 버튼에서 selected 제거
-                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('selected'));
-                // 클릭한 버튼에 selected 추가
-                this.classList.add('selected');
-                // hidden input 값 업데이트
-                styleInput.value = this.dataset.style;
-            });
-        });
 
         // file input 동기화
         function syncFileInputs() {
@@ -1198,10 +1244,8 @@
             }
         }
 
-        // 폼 제출시 처리
-        uploadForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
+        // 생성 버튼 클릭 처리
+        generateBtn.addEventListener('click', function() {
             if (isProcessing || uploadedImages.length === 0) return;
             isProcessing = true;
 
@@ -1211,8 +1255,7 @@
                 'event': 'generate_click',
                 'image_count': uploadedImages.length,
                 'layout': document.getElementById('layout').value,
-                'color_mode': document.getElementById('color-mode').value,
-                'style': document.getElementById('style').value
+                'style': styleInput.value
             });
 
             // 이미지 데이터와 옵션을 sessionStorage에 저장
@@ -1220,8 +1263,7 @@
                 images: uploadedImages.map(img => img.dataUrl),
                 frame_color: document.getElementById('frame-color').value,
                 layout: document.getElementById('layout').value,
-                color_mode: document.getElementById('color-mode').value,
-                style: document.getElementById('style').value
+                style: styleInput.value
             };
             sessionStorage.setItem('ai4cut_request', JSON.stringify(requestData));
 
