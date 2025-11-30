@@ -601,15 +601,9 @@
             }
         }
 
-        /* PC에서 버튼 여백 */
-        .btn-fixed-bottom {
-            margin-top: 16px;
-        }
-
         @media (max-width: 768px) {
             /* 모바일 하단 고정 버튼 */
             .btn-fixed-bottom {
-                margin-top: 0;
                 position: fixed;
                 bottom: 0;
                 left: 0;
@@ -923,13 +917,13 @@
                         </select>
                     </div>
                 </div>
-            </form>
-        </div>
 
-        <div class="btn-fixed-bottom" id="next-btn-wrapper">
-            <button type="button" class="btn" id="next-btn" disabled>
-                스타일 선택하기
-            </button>
+                <div class="btn-fixed-bottom" id="next-btn-wrapper">
+                    <button type="button" class="btn" id="next-btn" disabled>
+                        스타일 선택하기
+                    </button>
+                </div>
+            </form>
         </div>
 
         <!-- Step 2: 스타일 선택 -->
@@ -987,12 +981,12 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="btn-fixed-bottom" id="generate-btn-wrapper" style="display: none;">
-            <button type="button" class="btn" id="generate-btn">
-                AI4컷 생성 시작
-            </button>
+            <div class="btn-fixed-bottom" id="generate-btn-wrapper">
+                <button type="button" class="btn" id="generate-btn">
+                    AI4컷 생성 시작
+                </button>
+            </div>
         </div>
 
         <!-- Gallery Section -->
@@ -1056,17 +1050,12 @@
             colorCodeDisplay.textContent = e.target.value.toUpperCase();
         });
 
-        const nextBtnWrapper = document.getElementById('next-btn-wrapper');
-        const generateBtnWrapper = document.getElementById('generate-btn-wrapper');
-
         // 스텝 전환
         nextBtn.addEventListener('click', function() {
             if (uploadedImages.length > 0) {
                 step1.style.display = 'none';
                 step2.style.display = 'block';
                 gallerySection.style.display = 'none';
-                nextBtnWrapper.style.display = 'none';
-                generateBtnWrapper.style.display = 'block';
             }
         });
 
@@ -1074,8 +1063,6 @@
             step2.style.display = 'none';
             step1.style.display = 'block';
             gallerySection.style.display = 'block';
-            nextBtnWrapper.style.display = 'block';
-            generateBtnWrapper.style.display = 'none';
         });
 
         // 스타일 버튼 클릭 이벤트
