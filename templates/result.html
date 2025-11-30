@@ -496,10 +496,37 @@
         @media (max-width: 768px) {
             .main-content {
                 padding: 16px;
+                padding-bottom: 180px;
             }
 
             .image-display {
                 min-height: 300px;
+            }
+
+            /* 모바일 하단 고정 버튼 */
+            .button-group {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 12px 20px;
+                padding-bottom: calc(12px + env(safe-area-inset-bottom));
+                background: rgba(28, 28, 30, 0.95);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                z-index: 100;
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .button-group .btn {
+                padding: 12px 8px;
+                font-size: 0.875rem;
+            }
+
+            .button-group .btn-icon {
+                display: none;
             }
         }
     </style>
